@@ -368,6 +368,39 @@ CREATE TABLE IF NOT EXISTS `family_invitations` (
   CONSTRAINT `fk_invitations_responder` FOREIGN KEY (`responded_by`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Các lần mua vàng (số chỉ + tổng tiền đã trả).
+CREATE TABLE IF NOT EXISTS `gold_purchases` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `family_id` BIGINT NOT NULL,
+  `created_by` BIGINT NOT NULL,
+  `purchased_on` DATE NOT NULL,
+  `quantity_chi` DECIMAL(10, 3) NOT NULL,
+  `total_cost` DECIMAL(15, 2) NOT NULL,
+  `note` VARCHAR(255) DEFAULT NULL,
+  `created_at` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  KEY `idx_gold_purchases_family_date` (`family_id`, `purchased_on`),
+  CONSTRAINT `chk_gold_quantity_positive` CHECK (`quantity_chi` > 0),
+  CONSTRAINT `chk_gold_cost_positive` CHECK (`total_cost` > 0),
+  CONSTRAINT `fk_gold_purchases_family` FOREIGN KEY (`family_id`) REFERENCES `families` (`id`),
+  CONSTRAINT `fk_gold_purchases_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Giá vàng (1 chỉ) nhập tay theo ngày; mỗi gia đình mỗi ngày một giá.
+CREATE TABLE IF NOT EXISTS `gold_prices` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `family_id` BIGINT NOT NULL,
+  `created_by` BIGINT NOT NULL,
+  `price_date` DATE NOT NULL,
+  `price_per_chi` DECIMAL(15, 2) NOT NULL,
+  `created_at` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_gold_price_family_date` (`family_id`, `price_date`),
+  CONSTRAINT `chk_gold_price_positive` CHECK (`price_per_chi` > 0),
+  CONSTRAINT `fk_gold_prices_family` FOREIGN KEY (`family_id`) REFERENCES `families` (`id`),
+  CONSTRAINT `fk_gold_prices_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `family_budgets` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `family_id` BIGINT NOT NULL,

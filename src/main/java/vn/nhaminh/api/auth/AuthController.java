@@ -21,9 +21,24 @@ import vn.nhaminh.api.auth.AuthDtos.VerificationResponse;
 @RequestMapping("/api/auth")
 public class AuthController {
     private final AuthService authService;
+    private final AvailabilityService availabilityService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, AvailabilityService availabilityService) {
         this.authService = authService;
+        this.availabilityService = availabilityService;
+    }
+
+    /** Kiểm tra trùng/định dạng khi đang gõ. Đã đăng nhập thì bỏ qua chính tài khoản mình. */
+    @GetMapping("/check-availability")
+    public AvailabilityService.AvailabilityResponse checkAvailability(
+            Authentication authentication,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String phoneNumber) {
+        boolean signedIn = authentication != null && authentication.isAuthenticated()
+                && !(authentication instanceof org.springframework.security.authentication.AnonymousAuthenticationToken);
+        String current = signedIn ? authentication.getName() : null;
+        return availabilityService.check(username, email, phoneNumber, current);
     }
 
     @PostMapping("/register")

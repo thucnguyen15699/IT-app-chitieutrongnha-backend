@@ -1,0 +1,19 @@
+# Build
+target/
+
+# Eclipse / IDE
+.metadata/
+.settings/
+.classpath
+.project
+.vscode/
+.idea/
+
+# Dữ liệu H2 cục bộ
+data/
+
+# Bí mật — KHÔNG commit (chỉ commit file *.env.example)
+.env
+*.env
+
+*.log

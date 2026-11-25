@@ -1,0 +1,28 @@
+# Môi trường TEST (test.<tên-miền>): kiểm thử trước khi lên production, cấu hình giống prd nhất có thể.
+# Kích hoạt: SPRING_PROFILES_ACTIVE=mysql,test
+app:
+  jwt:
+    secret: ${JWT_SECRET}            # bắt buộc, không có giá trị mặc định
+  mail:
+    verification-enabled: ${MAIL_VERIFICATION_ENABLED:true}
+  security:
+    # Từ chối khởi động nếu JWT_SECRET yếu hoặc admin còn mật khẩu mặc định.
+    enforce-strong-secrets: true
+
+spring:
+  datasource:
+    password: ${DB_PASSWORD}         # bắt buộc
+  jpa:
+    properties:
+      hibernate:
+        format_sql: false
+
+logging:
+  level:
+    vn.nhaminh: INFO
+
+server:
+  forward-headers-strategy: framework
+  error:
+    include-stacktrace: never
+    include-message: always

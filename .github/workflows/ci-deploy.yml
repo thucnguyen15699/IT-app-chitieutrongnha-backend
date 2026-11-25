@@ -1,0 +1,68 @@
+# Kiểm thử + deploy tự động.
+#   push develop → test → deploy DEV
+#   push test    → test → deploy TEST
+#   push main    → test → (chờ duyệt) → deploy PRD
+#   pull request → chỉ chạy test
+# Cần secrets: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS, (tùy chọn) DEPLOY_PORT.
+# Thiết lập: xem deploy/README.md mục 9.
+name: CI & Deploy
+
+on:
+  push:
+    branches: [develop, test, main]
+  pull_request:
+    branches: [develop, test, main]
+  workflow_dispatch: {}   # chạy tay trên tab Actions (chọn nhánh = chọn môi trường)
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Kiểm thử backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Chạy test
+        run: mvn -B -q test
+      - name: Đóng gói
+        run: mvn -B -q -DskipTests package
+
+  deploy:
+    name: Deploy ${{ github.ref_name == 'main' && 'prd' || github.ref_name == 'test' && 'test' || 'dev' }}
+    needs: test
+    if: github.event_name != 'pull_request' && contains(fromJSON('["develop","test","main"]'), github.ref_name)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Environment "prd" có thể đặt "Required reviewers" để bắt buộc duyệt trước khi lên production.
+    environment:
+      name: ${{ github.ref_name == 'main' && 'prd' || github.ref_name == 'test' && 'test' || 'dev' }}
+    # Không chạy 2 lần deploy cùng môi trường từ repo này cùng lúc; lần sau xếp hàng chờ.
+    concurrency:
+      group: deploy-${{ github.ref_name }}
+      cancel-in-progress: false
+    steps:
+      - name: Deploy qua SSH
+        env:
+          TARGET: ${{ github.ref_name == 'main' && 'prd' || github.ref_name == 'test' && 'test' || 'dev' }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          PORT: ${{ secrets.DEPLOY_PORT }}
+          USER: ${{ secrets.DEPLOY_USER }}
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # Key này trên server bị khóa chỉ chạy được "deploy <env>" (forced command).
+          ssh -i ~/.ssh/deploy_key -p "${PORT:-22}" \
+              -o BatchMode=yes -o StrictHostKeyChecking=yes \
+              -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
+              "$USER@$HOST" "deploy $TARGET"

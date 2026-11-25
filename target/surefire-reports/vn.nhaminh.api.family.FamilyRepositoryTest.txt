@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: vn.nhaminh.api.family.FamilyRepositoryTest
 -------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.937 s -- in vn.nhaminh.api.family.FamilyRepositoryTest
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.540 s -- in vn.nhaminh.api.family.FamilyRepositoryTest

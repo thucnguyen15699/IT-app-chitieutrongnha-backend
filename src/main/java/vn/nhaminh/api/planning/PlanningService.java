@@ -41,6 +41,7 @@ public class PlanningService {
     private final SpendingTargetRepository targetRepository;
     private final FamilyTransactionRepository transactionRepository;
     private final TransactionService transactionService;
+    private final GoldPurchaseRepository goldPurchaseRepository;
 
     public PlanningService(
             CurrentFamilyService currentFamily,
@@ -50,7 +51,8 @@ public class PlanningService {
             ExpenseCategoryRepository categoryRepository,
             SpendingTargetRepository targetRepository,
             FamilyTransactionRepository transactionRepository,
-            TransactionService transactionService) {
+            TransactionService transactionService,
+            GoldPurchaseRepository goldPurchaseRepository) {
         this.currentFamily = currentFamily;
         this.plannedRepository = plannedRepository;
         this.goalRepository = goalRepository;
@@ -59,6 +61,7 @@ public class PlanningService {
         this.targetRepository = targetRepository;
         this.transactionRepository = transactionRepository;
         this.transactionService = transactionService;
+        this.goldPurchaseRepository = goldPurchaseRepository;
     }
 
     // ================= Khoản sắp phải chi =================
@@ -197,7 +200,8 @@ public class PlanningService {
                 plannedRepository.sumByFamilyAndStatus(familyId, PlannedExpense.Status.PENDING),
                 plannedRepository.countByFamily_IdAndStatus(familyId, PlannedExpense.Status.PENDING),
                 deposited.subtract(withdrawn),
-                totalSaved);
+                totalSaved,
+                goldPurchaseRepository.sumCostInPeriod(familyId, start, end));
     }
 
     // ================= Hỗ trợ =================

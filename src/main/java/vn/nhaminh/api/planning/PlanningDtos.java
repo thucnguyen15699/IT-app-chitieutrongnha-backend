@@ -64,10 +64,12 @@ public final class PlanningDtos {
      * pendingTotal: tổng các khoản sắp phải chi chưa chi.
      * savingsNetInMonth: tiền gửi tiết kiệm trừ tiền rút trong tháng (tiền đã rời khỏi ví).
      * totalSaved: tổng số dư của mọi mục tiết kiệm.
+     * goldSpentInMonth: tiền mua vàng trong tháng (cũng là tiền đã rời khỏi ví).
      */
     public record PlanningSummary(
             BigDecimal pendingTotal,
             long pendingCount,
             BigDecimal savingsNetInMonth,
-            BigDecimal totalSaved) {}
+            BigDecimal totalSaved,
+            BigDecimal goldSpentInMonth) {}
 }

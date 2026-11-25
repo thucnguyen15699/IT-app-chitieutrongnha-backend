@@ -1,0 +1,10 @@
+target
+.metadata
+.settings
+.classpath
+.project
+.git
+.github
+deploy
+data
+*.log

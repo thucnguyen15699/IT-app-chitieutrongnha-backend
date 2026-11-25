@@ -1,9 +1,13 @@
 D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\admin\AdminUserServiceTest.java
 D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\auth\AuthServiceTest.java
+D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\auth\AvailabilityServiceTest.java
 D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\auth\ProfileServiceTest.java
+D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\config\StartupSecurityTest.java
 D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\family\CurrentFamilyServiceTest.java
 D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\family\FamilyRepositoryTest.java
 D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\family\FamilyServiceTest.java
+D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\planning\GoldRepositoryTest.java
+D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\planning\GoldServiceTest.java
 D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\planning\PlanningRepositoryTest.java
 D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\planning\PlanningServiceTest.java
 D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\transaction\CategoryServiceTest.java

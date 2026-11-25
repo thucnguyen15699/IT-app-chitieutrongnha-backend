@@ -109,6 +109,11 @@ public class User {
         return pendingEmail != null ? pendingEmail : email;
     }
 
+    /** Đặt mật khẩu mới (đã mã hóa BCrypt). */
+    public void changePasswordHash(String newPasswordHash) {
+        this.passwordHash = newPasswordHash;
+    }
+
     public void updateName(String newName) {
         this.name = newName;
     }

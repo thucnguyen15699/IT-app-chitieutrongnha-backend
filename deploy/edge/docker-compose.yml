@@ -1,0 +1,21 @@
+# Cổng vào duy nhất từ Internet: Cloudflare Tunnel.
+# - Không cần mở cổng 80/443 trên server, không cần tự làm chứng chỉ SSL (Cloudflare lo).
+# - Ẩn IP thật của server.
+# Chạy MỘT lần cho cả 3 môi trường:
+#   cd /opt/nhaminh/edge && docker compose up -d
+# Định tuyến tên miền → container cấu hình trong Cloudflare (xem deploy/README.md, bước 3).
+
+name: nhaminh-edge
+
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?Thiếu CLOUDFLARE_TUNNEL_TOKEN trong edge/.env}
+    networks: [edge]
+
+networks:
+  edge:
+    name: nhaminh-edge

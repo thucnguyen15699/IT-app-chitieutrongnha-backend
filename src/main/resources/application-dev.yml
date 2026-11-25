@@ -1,0 +1,17 @@
+# Môi trường DEV trên server (dev.<tên-miền>): để lập trình viên thử tính năng mới.
+# Kích hoạt: SPRING_PROFILES_ACTIVE=mysql,dev
+app:
+  mail:
+    # Dev thường chưa có SMTP: đăng ký/đổi email có hiệu lực ngay.
+    verification-enabled: ${MAIL_VERIFICATION_ENABLED:false}
+  security:
+    enforce-strong-secrets: false
+
+logging:
+  level:
+    vn.nhaminh: DEBUG
+    org.hibernate.SQL: INFO
+
+server:
+  error:
+    include-message: always

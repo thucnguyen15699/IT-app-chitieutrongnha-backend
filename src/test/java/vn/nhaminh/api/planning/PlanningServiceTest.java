@@ -44,6 +44,7 @@ class PlanningServiceTest {
     @Mock private SpendingTargetRepository targetRepository;
     @Mock private FamilyTransactionRepository transactionRepository;
     @Mock private TransactionService transactionService;
+    @Mock private GoldPurchaseRepository goldPurchaseRepository;
     @InjectMocks private PlanningService planningService;
 
     private final User user = new User("member", "Member", null, null, "encoded", true);
@@ -120,6 +121,7 @@ class PlanningServiceTest {
                 new Object[] {1L, SavingsContribution.Type.WITHDRAW, new BigDecimal("500000")}));
         when(plannedRepository.sumByFamilyAndStatus(null, PlannedExpense.Status.PENDING)).thenReturn(new BigDecimal("7000000"));
         when(plannedRepository.countByFamily_IdAndStatus(null, PlannedExpense.Status.PENDING)).thenReturn(2L);
+        when(goldPurchaseRepository.sumCostInPeriod(eq(null), any(), any())).thenReturn(new BigDecimal("30000000"));
 
         var summary = planningService.summary("member", "2026-11");
 
@@ -127,5 +129,6 @@ class PlanningServiceTest {
         assertEquals(2L, summary.pendingCount());
         assertEquals(new BigDecimal("2500000"), summary.savingsNetInMonth());
         assertEquals(new BigDecimal("7500000"), summary.totalSaved());
+        assertEquals(new BigDecimal("30000000"), summary.goldSpentInMonth());
     }
 }

@@ -5,6 +5,7 @@ D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\admin\AdminUserService.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\auth\AuthController.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\auth\AuthDtos.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\auth\AuthService.java
+D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\auth\AvailabilityService.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\auth\EmailVerificationService.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\auth\EmailVerificationToken.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\auth\EmailVerificationTokenRepository.java
@@ -16,8 +17,10 @@ D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\auth\ProfileService.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\auth\Role.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\auth\RoleRepository.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\config\ApiExceptionHandler.java
+D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\config\HealthController.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\config\MailService.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\config\SecurityConfig.java
+D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\config\StartupSecurity.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\family\CurrentFamilyService.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\family\Family.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\family\FamilyController.java
@@ -29,6 +32,13 @@ D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\family\FamilyMembershipReposit
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\family\FamilyRepository.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\family\FamilyService.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\NhaMinhApplication.java
+D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\GoldController.java
+D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\GoldDtos.java
+D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\GoldPrice.java
+D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\GoldPriceRepository.java
+D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\GoldPurchase.java
+D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\GoldPurchaseRepository.java
+D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\GoldService.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\PlannedExpense.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\PlannedExpenseRepository.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\PlanningController.java

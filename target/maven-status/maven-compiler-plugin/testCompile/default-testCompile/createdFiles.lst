@@ -1,4 +1,4 @@
-vn\nhaminh\api\transaction\TransactionRepositoryTest.class
 vn\nhaminh\api\auth\AuthServiceTest.class
 vn\nhaminh\api\transaction\TransactionServiceTest.class
 vn\nhaminh\api\admin\AdminUserServiceTest.class
+vn\nhaminh\api\transaction\TransactionRepositoryTest.class
