@@ -1,0 +1,11 @@
+package vn.nhaminh.api;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class NhaMinhApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(NhaMinhApplication.class, args);
+    }
+}
