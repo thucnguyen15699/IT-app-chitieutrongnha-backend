@@ -57,5 +57,15 @@ class PlanningRepositoryTest {
                 family.getId(), SavingsContribution.Type.DEPOSIT, today.withDayOfMonth(1), today.plusMonths(1).withDayOfMonth(1))));
         assertEquals(1, goalRepository.findByFamily_IdOrderByCreatedAtAsc(family.getId()).size());
         assertEquals(2, contributionRepository.findTop5ByGoal_IdOrderByOccurredOnDescIdDesc(trip.getId()).size());
+
+        // Tự ghi khoản đến hạn: hạn "Sách vở" là hôm nay+5, "Học phí" hôm nay+20.
+        assertEquals(0, plannedRepository.findDuePendingIds(today).size());
+        var dueIds = plannedRepository.findDuePendingIds(today.plusDays(5));
+        assertEquals(1, dueIds.size());
+        var loaded = plannedRepository.findForAutoPay(dueIds.getFirst()).orElseThrow();
+        assertEquals("Sách vở", loaded.getDescription());
+        assertEquals("Giáo dục", loaded.getCategory().getName());
+        assertEquals("Thành viên", loaded.getCreatedBy().getName());
+        assertEquals(2, plannedRepository.findDuePendingIds(today.plusDays(30)).size());
     }
 }

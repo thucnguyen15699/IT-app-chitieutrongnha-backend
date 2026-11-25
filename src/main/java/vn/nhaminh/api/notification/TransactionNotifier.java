@@ -36,9 +36,10 @@ public class TransactionNotifier {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onTransactionCreated(TransactionCreatedEvent event) {
         try {
+            // Người tự thêm thì không cần báo lại; khoản hệ thống tự ghi thì báo cho cả nhà.
             List<Long> recipients = membershipRepository.findMembers(event.familyId()).stream()
                     .map(membership -> membership.getUser().getId())
-                    .filter(userId -> !userId.equals(event.actorUserId()))
+                    .filter(userId -> event.automatic() || !userId.equals(event.actorUserId()))
                     .toList();
             if (recipients.isEmpty()) return;
             var result = pushService.sendToUsers(recipients, toMessage(event));
@@ -51,12 +52,15 @@ public class TransactionNotifier {
 
     static PushMessage toMessage(TransactionCreatedEvent event) {
         boolean expense = event.type() == TransactionType.EXPENSE;
-        String title = event.actorName() + (expense ? " vừa thêm khoản chi" : " vừa thêm khoản thu");
+        String title = event.automatic()
+                ? "Đã tự ghi khoản chi đến hạn"
+                : event.actorName() + (expense ? " vừa thêm khoản chi" : " vừa thêm khoản thu");
         StringBuilder body = new StringBuilder()
                 .append(expense ? "-" : "+").append(formatMoney(event.amount()))
                 .append(" · ").append(event.categoryName());
         if (expense && event.targetName() != null) body.append(" · cho ").append(event.targetName());
         if (event.note() != null && !event.note().isBlank()) body.append(" — ").append(event.note());
+        if (event.automatic()) body.append(" (do ").append(event.actorName()).append(" lên kế hoạch)");
         return new PushMessage(title, body.toString(), "/#/tong-quan", "tx-" + event.transactionId());
     }
 

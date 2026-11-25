@@ -124,9 +124,18 @@ public class TransactionService {
 
     @Transactional
     public TransactionView create(String username, TransactionRequest request) {
-        String note = validateAndNormalizeRequest(request);
+        validateAndNormalizeRequest(request); // báo lỗi dữ liệu trước khi tra tài khoản
         User user = findUser(username);
-        Family family = findFamily(user);
+        return createInFamily(user, findFamily(user), request, false);
+    }
+
+    /**
+     * Tạo giao dịch cho một gia đình cụ thể.
+     * automatic = true khi hệ thống tự ghi (khoản sắp chi đến hạn): thông báo sẽ ghi rõ là tự động.
+     */
+    @Transactional
+    public TransactionView createInFamily(User user, Family family, TransactionRequest request, boolean automatic) {
+        String note = validateAndNormalizeRequest(request);
         ExpenseCategory category = findCategory(family, request);
         SpendingTarget target = findTarget(family, request);
         FamilyTransaction transaction = transactionRepository.save(new FamilyTransaction(
@@ -142,7 +151,7 @@ public class TransactionService {
         // Báo cho các thành viên khác (gửi sau khi lưu xong, xem TransactionNotifier).
         events.publishEvent(new TransactionCreatedEvent(
                 view.id(), family.getId(), user.getId(), user.getName(), view.type(), view.amount(),
-                view.categoryName(), view.targetName(), view.note()));
+                view.categoryName(), view.targetName(), view.note(), automatic));
         return view;
     }
 

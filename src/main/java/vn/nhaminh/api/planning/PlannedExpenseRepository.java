@@ -30,4 +30,23 @@ public interface PlannedExpenseRepository extends JpaRepository<PlannedExpense, 
     long countByFamily_IdAndStatus(Long familyId, PlannedExpense.Status status);
 
     boolean existsByCategory_Id(Long categoryId);
+
+    /** Khoản chưa chi đã đến hạn (hạn ≤ ngày cho trước), hạn sớm nhất trước. */
+    @Query("""
+            select p.id from PlannedExpense p
+            where p.status = vn.nhaminh.api.planning.PlannedExpense.Status.PENDING and p.dueOn <= :today
+            order by p.dueOn, p.id
+            """)
+    List<Long> findDuePendingIds(@Param("today") java.time.LocalDate today);
+
+    /** Nạp sẵn mọi thứ cần để tự ghi giao dịch (chạy ngoài request, không có phiên lazy). */
+    @Query("""
+            select p from PlannedExpense p
+            join fetch p.family
+            join fetch p.category
+            join fetch p.createdBy
+            left join fetch p.target
+            where p.id = :id
+            """)
+    Optional<PlannedExpense> findForAutoPay(@Param("id") Long id);
 }

@@ -39,6 +39,9 @@ app:
     # TẠM TẮT xác minh email để test khi chưa có SMTP: đăng ký/đổi email có hiệu lực ngay, không gửi thư.
     # Trước khi deploy thật: đặt MAIL_VERIFICATION_ENABLED=true và cấu hình MAIL_USERNAME/MAIL_PASSWORD.
     verification-enabled: ${MAIL_VERIFICATION_ENABLED:false}
+  planned:
+    # Khoản sắp chi đến hạn tự chuyển thành khoản đã chi (00:05 mỗi ngày + khi khởi động).
+    auto-pay-enabled: ${PLANNED_AUTOPAY_ENABLED:true}
   admin:
     # Có giá trị thì khi khởi động sẽ đặt mật khẩu tài khoản "admin" theo biến này.
     password: ${ADMIN_PASSWORD:}

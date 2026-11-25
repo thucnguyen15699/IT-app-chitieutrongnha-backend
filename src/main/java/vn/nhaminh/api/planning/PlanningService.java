@@ -108,6 +108,34 @@ public class PlanningService {
         plannedRepository.delete(findPendingPlanned(family, id));
     }
 
+    /**
+     * Tự ghi MỘT khoản sắp chi đã đến hạn thành giao dịch chi (ngày giao dịch = ngày hạn).
+     * Giao dịch thuộc gia đình của khoản sắp chi, người ghi là người đã lập khoản đó.
+     * Chạy trong giao dịch DB riêng để khoản này lỗi không ảnh hưởng khoản khác.
+     *
+     * @return true nếu đã ghi; false nếu khoản không còn chờ hoặc chưa đến hạn (đã có người xử lý).
+     */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public boolean autoPayDue(Long plannedId, LocalDate today) {
+        PlannedExpense planned = plannedRepository.findForAutoPay(plannedId).orElse(null);
+        if (planned == null || planned.getStatus() != PlannedExpense.Status.PENDING || planned.getDueOn().isAfter(today)) {
+            return false;
+        }
+        TransactionView transaction = transactionService.createInFamily(
+                planned.getCreatedBy(),
+                planned.getFamily(),
+                new TransactionRequest(
+                        TransactionType.EXPENSE,
+                        planned.getCategory().getId(),
+                        planned.getAmount(),
+                        planned.getDescription(),
+                        planned.getDueOn(),
+                        planned.getTarget() == null ? null : planned.getTarget().getId()),
+                true);
+        planned.markPaid(transactionRepository.getReferenceById(transaction.id()));
+        return true;
+    }
+
     /** Bấm "Đã chi": tạo giao dịch chi thật vào hôm nay và đánh dấu khoản dự kiến là đã chi. */
     @Transactional
     public TransactionView payPlanned(String username, Long id) {

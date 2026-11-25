@@ -49,6 +49,7 @@ D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\GoldPurchase.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\GoldPurchaseRepository.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\GoldService.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\PlannedExpense.java
+D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\PlannedExpenseAutoPayer.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\PlannedExpenseRepository.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\PlanningController.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\planning\PlanningDtos.java

@@ -9,6 +9,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 /** Luồng nền cho việc gửi thông báo, để không làm chậm thao tác của người dùng. */
 @Configuration
 @EnableAsync
+@org.springframework.scheduling.annotation.EnableScheduling // việc định kỳ: tự ghi khoản sắp chi đến hạn
 public class AsyncConfig {
     @Bean(name = "taskExecutor")
     Executor taskExecutor() {

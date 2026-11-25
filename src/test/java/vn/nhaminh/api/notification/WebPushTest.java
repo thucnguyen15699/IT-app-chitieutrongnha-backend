@@ -116,14 +116,14 @@ class WebPushTest {
     @Test
     void notificationTextDescribesTheTransaction() {
         var message = TransactionNotifier.toMessage(new TransactionCreatedEvent(
-                5L, 1L, 2L, "Mẹ", TransactionType.EXPENSE, new BigDecimal("250000"), "Ăn uống", "Con", "mua sữa"));
+                5L, 1L, 2L, "Mẹ", TransactionType.EXPENSE, new BigDecimal("250000"), "Ăn uống", "Con", "mua sữa", false));
 
         assertEquals("Mẹ vừa thêm khoản chi", message.title());
         assertEquals("-250.000 ₫ · Ăn uống · cho Con — mua sữa", message.body());
         assertEquals("tx-5", message.tag());
 
         var income = TransactionNotifier.toMessage(new TransactionCreatedEvent(
-                6L, 1L, 2L, "Bố", TransactionType.INCOME, new BigDecimal("15000000"), "Lương", null, null));
+                6L, 1L, 2L, "Bố", TransactionType.INCOME, new BigDecimal("15000000"), "Lương", null, null, false));
         assertEquals("Bố vừa thêm khoản thu", income.title());
         assertEquals("+15.000.000 ₫ · Lương", income.body());
     }
@@ -142,7 +142,7 @@ class WebPushTest {
         when(push.sendToUsers(any(), any())).thenReturn(new PushService.SendResult(1, 0));
 
         new TransactionNotifier(memberships, push).onTransactionCreated(new TransactionCreatedEvent(
-                5L, 10L, 1L, "Mẹ", TransactionType.EXPENSE, new BigDecimal("250000"), "Ăn uống", null, "mua sữa"));
+                5L, 10L, 1L, "Mẹ", TransactionType.EXPENSE, new BigDecimal("250000"), "Ăn uống", null, "mua sữa", false));
 
         verify(push).sendToUsers(eq(List.of(2L)), any());
     }
@@ -156,9 +156,32 @@ class WebPushTest {
         PushService push = mock(PushService.class);
 
         new TransactionNotifier(memberships, push).onTransactionCreated(new TransactionCreatedEvent(
-                5L, 10L, 1L, "Mẹ", TransactionType.INCOME, BigDecimal.TEN, "Lương", null, null));
+                5L, 10L, 1L, "Mẹ", TransactionType.INCOME, BigDecimal.TEN, "Lương", null, null, false));
 
         verify(push, never()).sendToUsers(any(), any());
+    }
+
+    @Test
+    void automaticallyRecordedDueExpenseNotifiesWholeFamilyIncludingPlanner() {
+        Family family = new Family("Nhà mình");
+        User mom = mock(User.class);
+        User dad = mock(User.class);
+        when(mom.getId()).thenReturn(1L);
+        when(dad.getId()).thenReturn(2L);
+        FamilyMembershipRepository memberships = mock(FamilyMembershipRepository.class);
+        when(memberships.findMembers(10L)).thenReturn(List.of(
+                new FamilyMembership(family, mom, "OWNER"), new FamilyMembership(family, dad, "MEMBER")));
+        PushService push = mock(PushService.class);
+        when(push.sendToUsers(any(), any())).thenReturn(new PushService.SendResult(2, 0));
+        var event = new TransactionCreatedEvent(
+                99L, 10L, 1L, "Mẹ", TransactionType.EXPENSE, new BigDecimal("5000000"), "Giáo dục", null, "Học phí kỳ 2", true);
+
+        new TransactionNotifier(memberships, push).onTransactionCreated(event);
+
+        verify(push).sendToUsers(eq(List.of(1L, 2L)), any()); // cả người lập kế hoạch cũng được báo
+        var message = TransactionNotifier.toMessage(event);
+        assertEquals("Đã tự ghi khoản chi đến hạn", message.title());
+        assertEquals("-5.000.000 ₫ · Giáo dục — Học phí kỳ 2 (do Mẹ lên kế hoạch)", message.body());
     }
 
     private static byte[] concat(byte[]... parts) {

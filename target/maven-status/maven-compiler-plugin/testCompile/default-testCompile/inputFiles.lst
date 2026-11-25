@@ -9,6 +9,7 @@ D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\family\FamilyServiceTest.java
 D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\notification\WebPushTest.java
 D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\planning\GoldRepositoryTest.java
 D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\planning\GoldServiceTest.java
+D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\planning\PlannedExpenseAutoPayTest.java
 D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\planning\PlanningRepositoryTest.java
 D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\planning\PlanningServiceTest.java
 D:\prjcanhan\backend\src\test\java\vn\nhaminh\api\transaction\CategoryServiceTest.java

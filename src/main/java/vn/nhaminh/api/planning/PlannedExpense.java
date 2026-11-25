@@ -109,4 +109,5 @@ public class PlannedExpense {
     public String getDescription() { return description; }
     public LocalDate getDueOn() { return dueOn; }
     public Status getStatus() { return status; }
+    public User getCreatedBy() { return createdBy; }
 }
