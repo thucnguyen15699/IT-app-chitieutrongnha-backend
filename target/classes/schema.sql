@@ -386,6 +386,32 @@ CREATE TABLE IF NOT EXISTS `gold_purchases` (
   CONSTRAINT `fk_gold_purchases_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Thiết bị đã bật thông báo đẩy (Web Push: iOS 16.4+, Android, máy tính).
+CREATE TABLE IF NOT EXISTS `push_subscriptions` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `user_id` BIGINT NOT NULL,
+  `endpoint` VARCHAR(2048) NOT NULL,
+  `endpoint_hash` VARCHAR(64) NOT NULL,
+  `p256dh` VARCHAR(255) NOT NULL,
+  `auth` VARCHAR(64) NOT NULL,
+  `device_label` VARCHAR(100) DEFAULT NULL,
+  `created_at` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `last_success_at` TIMESTAMP(6) NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_push_endpoint_hash` (`endpoint_hash`),
+  KEY `idx_push_user` (`user_id`),
+  CONSTRAINT `fk_push_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Cặp khóa VAPID của server (1 dòng, tự sinh lần đầu). Đổi khóa = mọi thiết bị phải bật lại thông báo.
+CREATE TABLE IF NOT EXISTS `push_vapid_keys` (
+  `id` BIGINT NOT NULL,
+  `public_key` VARCHAR(255) NOT NULL,
+  `private_key` VARCHAR(512) NOT NULL,
+  `created_at` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Giá vàng (1 chỉ) nhập tay theo ngày; mỗi gia đình mỗi ngày một giá.
 CREATE TABLE IF NOT EXISTS `gold_prices` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,

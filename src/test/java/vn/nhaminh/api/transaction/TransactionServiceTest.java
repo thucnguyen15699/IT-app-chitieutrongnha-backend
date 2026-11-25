@@ -30,6 +30,7 @@ class TransactionServiceTest {
     @Mock private FamilyTransactionRepository transactionRepository;
     @Mock private SpendingTargetRepository targetRepository;
     @Mock private vn.nhaminh.api.family.FamilyRepository familyRepository;
+    @Mock private org.springframework.context.ApplicationEventPublisher events;
     private TransactionService transactionService;
 
     @org.junit.jupiter.api.BeforeEach
@@ -37,7 +38,7 @@ class TransactionServiceTest {
         // Dùng CurrentFamilyService thật trên các repository giả để giữ nguyên luồng tìm gia đình.
         var currentFamily = new vn.nhaminh.api.family.CurrentFamilyService(
                 userRepository, membershipRepository, familyRepository);
-        transactionService = new TransactionService(currentFamily, categoryRepository, transactionRepository, targetRepository);
+        transactionService = new TransactionService(currentFamily, categoryRepository, transactionRepository, targetRepository, events);
     }
 
     @Test
@@ -62,6 +63,8 @@ class TransactionServiceTest {
         assertEquals(occurredOn, saved.occurredOn());
         assertEquals("Cả nhà", saved.targetName());
         verify(transactionRepository).save(any(FamilyTransaction.class));
+        // Có giao dịch mới thì phát sự kiện để báo cho các thành viên khác.
+        verify(events).publishEvent(any(TransactionCreatedEvent.class));
     }
 
     @Test

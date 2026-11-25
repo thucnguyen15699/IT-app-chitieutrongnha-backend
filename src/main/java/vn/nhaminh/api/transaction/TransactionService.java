@@ -6,6 +6,7 @@ import java.time.Year;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,16 +28,19 @@ public class TransactionService {
     private final ExpenseCategoryRepository categoryRepository;
     private final FamilyTransactionRepository transactionRepository;
     private final SpendingTargetRepository targetRepository;
+    private final ApplicationEventPublisher events;
 
     public TransactionService(
             CurrentFamilyService currentFamily,
             ExpenseCategoryRepository categoryRepository,
             FamilyTransactionRepository transactionRepository,
-            SpendingTargetRepository targetRepository) {
+            SpendingTargetRepository targetRepository,
+            ApplicationEventPublisher events) {
         this.currentFamily = currentFamily;
         this.categoryRepository = categoryRepository;
         this.transactionRepository = transactionRepository;
         this.targetRepository = targetRepository;
+        this.events = events;
     }
 
     @Transactional(readOnly = true)
@@ -134,7 +138,12 @@ public class TransactionService {
                 request.amount(),
                 note,
                 request.occurredOn().atStartOfDay()));
-        return toView(transaction);
+        TransactionView view = toView(transaction);
+        // Báo cho các thành viên khác (gửi sau khi lưu xong, xem TransactionNotifier).
+        events.publishEvent(new TransactionCreatedEvent(
+                view.id(), family.getId(), user.getId(), user.getName(), view.type(), view.amount(),
+                view.categoryName(), view.targetName(), view.note()));
+        return view;
     }
 
     @Transactional
