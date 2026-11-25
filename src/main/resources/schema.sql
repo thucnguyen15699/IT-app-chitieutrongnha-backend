@@ -77,6 +77,19 @@ PREPARE `add_user_column_statement` FROM @user_column_sql;
 EXECUTE `add_user_column_statement`;
 DEALLOCATE PREPARE `add_user_column_statement`;
 
+-- Email mới đang chờ xác minh khi người dùng đổi email trong "Thông tin cá nhân".
+SET @user_column_sql = IF(
+  (SELECT COUNT(*) FROM `information_schema`.`columns`
+   WHERE `table_schema` = DATABASE()
+     AND `table_name` = 'users'
+     AND `column_name` = 'pending_email') = 0,
+  'ALTER TABLE `users` ADD COLUMN `pending_email` VARCHAR(254) DEFAULT NULL',
+  'SELECT 1'
+);
+PREPARE `add_user_column_statement` FROM @user_column_sql;
+EXECUTE `add_user_column_statement`;
+DEALLOCATE PREPARE `add_user_column_statement`;
+
 UPDATE `users`
 SET `username` = CASE
   WHEN `email` = 'admin@chitieugiadinh.local' THEN 'admin'

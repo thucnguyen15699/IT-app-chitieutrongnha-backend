@@ -65,6 +65,7 @@ class AuthServiceTest {
         User pending = new User("pending", "Pending", "pending@example.test", null, "encoded", false);
         when(userRepository.findByUsernameIgnoreCase("pending")).thenReturn(Optional.of(pending));
         when(passwordEncoder.matches("long-password", "encoded")).thenReturn(true);
+        when(emailVerificationService.isEnabled()).thenReturn(true);
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
@@ -84,6 +85,7 @@ class AuthServiceTest {
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(membershipRepository.save(any(FamilyMembership.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        when(emailVerificationService.isEnabled()).thenReturn(true);
 
         var response = authService.register(new RegisterRequest(
                 "Minh Anh", "MinhAnh", "MinhAnh@example.test", "0900000000",
@@ -94,5 +96,18 @@ class AuthServiceTest {
         assertEquals("minhanh", userCaptor.getValue().getUsername());
         assertFalse(userCaptor.getValue().isEmailVerified());
         assertEquals("Đã gửi liên kết xác minh đến email của bạn.", response.message());
+    }
+
+    @Test
+    void allowsLoginWithUnverifiedEmailWhileVerificationIsSwitchedOff() {
+        User pending = new User("pending", "Pending", "pending@example.test", null, "encoded", false);
+        when(userRepository.findByUsernameIgnoreCase("pending")).thenReturn(Optional.of(pending));
+        when(passwordEncoder.matches("long-password", "encoded")).thenReturn(true);
+        when(emailVerificationService.isEnabled()).thenReturn(false);
+        when(jwtService.generateToken("pending")).thenReturn("token");
+
+        var response = authService.login(new LoginRequest("pending", "long-password"));
+
+        assertEquals("token", response.token());
     }
 }

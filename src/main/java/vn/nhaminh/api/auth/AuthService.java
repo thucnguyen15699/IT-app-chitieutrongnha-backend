@@ -79,7 +79,9 @@ public class AuthService {
             membershipRepository.save(new FamilyMembership(family, user, "OWNER"));
         }
         emailVerificationService.issue(user);
-        return new RegistrationResponse("Đã gửi liên kết xác minh đến email của bạn.");
+        return new RegistrationResponse(emailVerificationService.isEnabled()
+                ? "Đã gửi liên kết xác minh đến email của bạn."
+                : "Đăng ký thành công. Bạn có thể đăng nhập ngay.");
     }
 
     @Transactional(readOnly = true)
@@ -89,7 +91,8 @@ public class AuthService {
                 .filter(account -> passwordEncoder.matches(request.password(), account.getPasswordHash()))
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.UNAUTHORIZED, "Tên đăng nhập hoặc mật khẩu chưa chính xác."));
-        if (user.getEmail() != null && !user.isEmailVerified()) {
+        // Khi đang tắt xác minh email (app.mail.verification-enabled=false) thì không chặn đăng nhập.
+        if (emailVerificationService.isEnabled() && user.getEmail() != null && !user.isEmailVerified()) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN, "Vui lòng xác minh email trước khi đăng nhập.");
         }
@@ -129,6 +132,7 @@ public class AuthService {
                 user.getEmail(),
                 user.getPhoneNumber(),
                 user.isEmailVerified(),
+                user.getPendingEmail(),
                 family == null ? null : family.getId(),
                 family == null ? null : family.getName(),
                 user.getRoles().stream().map(Role::getCode).sorted().toList());

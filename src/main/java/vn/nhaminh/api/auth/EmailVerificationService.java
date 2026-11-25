@@ -31,6 +31,7 @@ public class EmailVerificationService {
     private final String senderAddress;
     private final String mailUsername;
     private final String frontendUrl;
+    private final boolean verificationEnabled;
 
     public EmailVerificationService(
             EmailVerificationTokenRepository tokenRepository,
@@ -38,17 +39,33 @@ public class EmailVerificationService {
             ObjectProvider<JavaMailSender> mailSenders,
             @Value("${app.mail.from:}") String senderAddress,
             @Value("${spring.mail.username:}") String mailUsername,
-            @Value("${app.frontend-url}") String frontendUrl) {
+            @Value("${app.frontend-url}") String frontendUrl,
+            @Value("${app.mail.verification-enabled:false}") boolean verificationEnabled) {
         this.tokenRepository = tokenRepository;
         this.userRepository = userRepository;
         this.mailSenders = mailSenders;
         this.senderAddress = senderAddress;
         this.mailUsername = mailUsername;
         this.frontendUrl = frontendUrl;
+        this.verificationEnabled = verificationEnabled;
     }
 
+    /** false = đang tắt xác minh email (để test khi chưa có SMTP): email được coi là đã xác minh ngay. */
+    public boolean isEnabled() {
+        return verificationEnabled;
+    }
+
+    /**
+     * Bật xác minh: tạo token và gửi thư.
+     * Tắt xác minh: không gửi thư, xác minh ngay (email mới thay email cũ luôn).
+     */
     @Transactional
     public void issue(User user) {
+        if (!verificationEnabled) {
+            user.verifyEmail();
+            userRepository.save(user);
+            return;
+        }
         String rawToken = newToken();
         tokenRepository.deleteByUser_Id(user.getId());
         tokenRepository.save(new EmailVerificationToken(
@@ -67,6 +84,12 @@ public class EmailVerificationService {
         }
 
         User user = token.getUser();
+        // Đang đổi email: email mới có thể đã bị tài khoản khác dùng trong lúc chờ xác minh.
+        if (user.getPendingEmail() != null
+                && userRepository.existsByEmailIgnoreCaseAndIdNot(user.getPendingEmail(), user.getId())) {
+            tokenRepository.delete(token);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email này đã được tài khoản khác sử dụng.");
+        }
         user.verifyEmail();
         userRepository.save(user);
         tokenRepository.delete(token);
@@ -85,7 +108,7 @@ public class EmailVerificationService {
                 : frontendUrl;
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
-        message.setTo(user.getEmail());
+        message.setTo(user.emailToVerify());
         message.setSubject("Xác minh tài khoản NhaMinh");
         message.setText("Xin chào " + user.getName() + ",\n\n"
                 + "Mở liên kết sau để xác minh email (có hiệu lực trong 24 giờ):\n"

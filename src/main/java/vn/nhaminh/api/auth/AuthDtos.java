@@ -29,9 +29,19 @@ public final class AuthDtos {
             String email,
             String phoneNumber,
             boolean emailVerified,
+            /** Email mới đang chờ xác minh (null nếu không có). */
+            String pendingEmail,
             Long familyId,
             String familyName,
             List<String> roles) {}
+    /** Sửa thông tin cá nhân: email và số điện thoại đều bắt buộc. */
+    public record UpdateProfileRequest(
+            @NotBlank @Size(max = 100) String name,
+            @NotBlank @Email @Size(max = 254) String email,
+            @NotBlank @Size(max = 30) String phoneNumber) {}
+
+    public record ProfileUpdateResponse(UserProfile user, String message) {}
+
     public record AuthResponse(String token, UserProfile user) {}
     public record RegistrationResponse(String message) {}
     public record VerificationResponse(String message) {}

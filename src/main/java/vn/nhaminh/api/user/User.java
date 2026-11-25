@@ -40,6 +40,13 @@ public class User {
     @Column(nullable = false)
     private boolean emailVerified;
 
+    /**
+     * Email mới đang chờ xác minh. Email hiện tại vẫn dùng bình thường cho tới khi
+     * người dùng bấm liên kết xác minh, lúc đó pendingEmail mới thay thế email.
+     */
+    @Column(name = "pending_email", length = 254)
+    private String pendingEmail;
+
     @Column(nullable = false)
     private boolean enabled;
 
@@ -79,6 +86,7 @@ public class User {
     public String getPhoneNumber() { return phoneNumber; }
     public String getPasswordHash() { return passwordHash; }
     public boolean isEmailVerified() { return emailVerified; }
+    public String getPendingEmail() { return pendingEmail; }
     public boolean isEnabled() { return enabled; }
     public Instant getCreatedAt() { return createdAt; }
     public Set<Role> getRoles() { return Set.copyOf(roles); }
@@ -87,7 +95,43 @@ public class User {
         roles.add(role);
     }
 
+    /** Bấm liên kết xác minh: nếu đang đổi email thì email mới chính thức thay email cũ. */
     public void verifyEmail() {
+        if (pendingEmail != null) {
+            email = pendingEmail;
+            pendingEmail = null;
+        }
         emailVerified = true;
+    }
+
+    /** Địa chỉ cần gửi thư xác minh: email đang chờ, hoặc email hiện tại nếu chưa xác minh. */
+    public String emailToVerify() {
+        return pendingEmail != null ? pendingEmail : email;
+    }
+
+    public void updateName(String newName) {
+        this.name = newName;
+    }
+
+    public void updatePhoneNumber(String newPhoneNumber) {
+        this.phoneNumber = newPhoneNumber;
+    }
+
+    /**
+     * Yêu cầu dùng email mới. Nếu email hiện tại chưa xác minh (vd. vừa đăng ký gõ nhầm)
+     * thì thay luôn, vì chưa có gì để giữ lại; ngược lại chờ xác minh.
+     */
+    public void requestEmailChange(String newEmail) {
+        String normalized = newEmail.toLowerCase(java.util.Locale.ROOT);
+        if (normalized.equals(email)) {
+            pendingEmail = null;
+            return;
+        }
+        if (email != null && !emailVerified) {
+            email = normalized;
+            pendingEmail = null;
+        } else {
+            pendingEmail = normalized;
+        }
     }
 }
