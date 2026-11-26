@@ -219,6 +219,8 @@ Vào **Settings → Secrets and variables → Actions → New repository secret*
 
 Sau đó **xóa file `nhaminh_deploy_key` trên máy bạn** (GitHub đã giữ).
 
+Cuối cùng **bật deploy tự động**: tab **Variables** (cạnh tab Secrets) → *New repository variable* → tên `DEPLOY_ENABLED`, giá trị `true`. Làm cho cả 2 repo. Khi chưa bật, GitHub chỉ chạy test/build và **bỏ qua bước deploy** (không báo lỗi).
+
 ### 9.4. Bắt buộc duyệt trước khi lên production
 
 **Settings → Environments → `prd`** (tự xuất hiện sau lần chạy đầu, hoặc bấm *New environment* tạo trước) → bật **Required reviewers** → chọn bạn. Làm cho cả 2 repo. Từ đó mỗi lần push `main`, GitHub dừng lại chờ bạn bấm **Approve and deploy**.
