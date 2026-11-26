@@ -27,6 +27,7 @@ vn\nhaminh\api\admin\AdminDtos$CreateUserRequest.class
 vn\nhaminh\api\notification\PushService$SubscribeRequest.class
 vn\nhaminh\api\auth\AuthController.class
 vn\nhaminh\api\notification\PushController.class
+vn\nhaminh\api\config\SpaConfig.class
 vn\nhaminh\api\planning\GoldDtos$GoldPriceView.class
 vn\nhaminh\api\user\PhoneNumbers.class
 vn\nhaminh\api\transaction\SpendingTargetRepository.class
@@ -44,7 +45,6 @@ vn\nhaminh\api\family\FamilyDtos$MemberView.class
 vn\nhaminh\api\notification\TransactionNotifier.class
 vn\nhaminh\api\planning\PlanningController.class
 vn\nhaminh\api\transaction\TransactionDtos$CreateCategoryRequest.class
-vn\nhaminh\api\config\SpaController.class
 vn\nhaminh\api\planning\PlannedExpense$Status.class
 vn\nhaminh\api\auth\AuthDtos$UserProfile.class
 vn\nhaminh\api\notification\PushService$SendResult.class
@@ -55,6 +55,7 @@ vn\nhaminh\api\family\Family.class
 vn\nhaminh\api\auth\AvailabilityService.class
 vn\nhaminh\api\family\FamilyDtos.class
 vn\nhaminh\api\notification\PushController$SubscriptionBody.class
+vn\nhaminh\api\config\SpaConfig$1.class
 vn\nhaminh\api\auth\EmailVerificationTokenRepository.class
 vn\nhaminh\api\planning\SavingsContribution.class
 vn\nhaminh\api\transaction\ExpenseCategory.class
