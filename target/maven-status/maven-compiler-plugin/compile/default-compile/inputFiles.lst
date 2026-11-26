@@ -21,6 +21,7 @@ D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\config\AsyncConfig.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\config\HealthController.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\config\MailService.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\config\SecurityConfig.java
+D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\config\SpaController.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\config\StartupSecurity.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\family\CurrentFamilyService.java
 D:\prjcanhan\backend\src\main\java\vn\nhaminh\api\family\Family.java

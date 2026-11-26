@@ -32,7 +32,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/auth/verify", "/api/auth/check-availability", "/api/health").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/h2-console/**").permitAll()
-                        .anyRequest().authenticated())
+                        .requestMatchers("/api/**").authenticated()
+                        // Giao diện web (index.html, js, css, icon...) phục vụ công khai.
+                        .anyRequest().permitAll())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
