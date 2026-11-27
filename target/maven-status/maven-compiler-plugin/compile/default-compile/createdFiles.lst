@@ -4,6 +4,7 @@ vn\nhaminh\api\transaction\TransactionDtos$TransactionList.class
 vn\nhaminh\api\planning\GoldDtos$GoldPurchaseView.class
 vn\nhaminh\api\auth\EmailVerificationService.class
 vn\nhaminh\api\planning\SavingsContributionRepository.class
+vn\nhaminh\api\admin\AdminDtos$ResetPasswordRequest.class
 vn\nhaminh\api\admin\AdminDtos.class
 vn\nhaminh\api\config\SecurityConfig.class
 vn\nhaminh\api\config\AsyncConfig.class
@@ -121,6 +122,7 @@ vn\nhaminh\api\transaction\TransactionDtos$TargetView.class
 vn\nhaminh\api\transaction\ExpenseCategoryRepository.class
 vn\nhaminh\api\planning\SavingsGoal.class
 vn\nhaminh\api\auth\AvailabilityService$AvailabilityResponse.class
+vn\nhaminh\api\auth\AuthDtos$ChangePasswordRequest.class
 vn\nhaminh\api\transaction\TransactionDtos$StatsPart.class
 vn\nhaminh\api\admin\AdminDtos$UserView.class
 vn\nhaminh\api\family\FamilyDtos$FamilyView.class
