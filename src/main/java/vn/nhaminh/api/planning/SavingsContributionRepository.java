@@ -35,6 +35,16 @@ public interface SavingsContributionRepository extends JpaRepository<SavingsCont
             @Param("start") LocalDate start,
             @Param("end") LocalDate end);
 
+    /** Tổng tiền gửi (hoặc rút) của cả gia đình trước ngày :before. */
+    @Query("""
+            select coalesce(sum(c.amount), 0) from SavingsContribution c
+            where c.goal.family.id = :familyId and c.type = :type and c.occurredOn < :before
+            """)
+    BigDecimal sumByFamilyTypeBefore(
+            @Param("familyId") Long familyId,
+            @Param("type") SavingsContribution.Type type,
+            @Param("before") LocalDate before);
+
     List<SavingsContribution> findTop5ByGoal_IdOrderByOccurredOnDescIdDesc(Long goalId);
 
     @Modifying

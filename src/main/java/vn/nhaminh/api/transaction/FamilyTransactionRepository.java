@@ -37,4 +37,14 @@ public interface FamilyTransactionRepository extends JpaRepository<FamilyTransac
             @Param("familyId") Long familyId,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);
+
+    /** Tổng tiền theo loại (thu/chi) của gia đình trước thời điểm :before — dùng tính số dư mang sang. */
+    @Query("""
+            select coalesce(sum(t.amount), 0) from FamilyTransaction t
+            where t.family.id = :familyId and t.type = :type and t.occurredAt < :before
+            """)
+    java.math.BigDecimal sumByTypeBefore(
+            @Param("familyId") Long familyId,
+            @Param("type") TransactionType type,
+            @Param("before") LocalDateTime before);
 }

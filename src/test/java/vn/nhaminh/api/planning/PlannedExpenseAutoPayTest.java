@@ -43,7 +43,8 @@ class PlannedExpenseAutoPayTest {
             mock(CurrentFamilyService.class), plannedRepository, mock(SavingsGoalRepository.class),
             mock(SavingsContributionRepository.class), mock(ExpenseCategoryRepository.class),
             mock(SpendingTargetRepository.class), transactionRepository, transactionService,
-            mock(GoldPurchaseRepository.class));
+            mock(GoldPurchaseRepository.class), mock(vn.nhaminh.api.loan.LoanRepository.class),
+            mock(vn.nhaminh.api.loan.LoanRepaymentRepository.class));
 
     private final Family family = new Family("Nhà mình");
     private final User mom = new User("me", "Mẹ", null, null, "x", true);

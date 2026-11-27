@@ -427,6 +427,43 @@ CREATE TABLE IF NOT EXISTS `gold_prices` (
   CONSTRAINT `fk_gold_prices_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Khoản vay của gia đình (vay bạn bè, bố mẹ, anh chị em...). Còn nợ = amount − tổng loan_repayments.
+CREATE TABLE IF NOT EXISTS `loans` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `family_id` BIGINT NOT NULL,
+  `created_by` BIGINT NOT NULL,
+  `lender_type` VARCHAR(20) NOT NULL,
+  `lender_name` VARCHAR(100) NOT NULL,
+  `amount` DECIMAL(15, 2) NOT NULL,
+  `borrowed_on` DATE NOT NULL,
+  `repayment_mode` VARCHAR(20) NOT NULL,
+  `installment_amount` DECIMAL(15, 2) DEFAULT NULL,
+  `due_on` DATE DEFAULT NULL,
+  `note` VARCHAR(500) DEFAULT NULL,
+  `created_at` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  KEY `idx_loans_family_date` (`family_id`, `borrowed_on`),
+  CONSTRAINT `chk_loans_amount_positive` CHECK (`amount` > 0),
+  CONSTRAINT `fk_loans_family` FOREIGN KEY (`family_id`) REFERENCES `families` (`id`),
+  CONSTRAINT `fk_loans_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Mỗi lần trả nợ cho một khoản vay.
+CREATE TABLE IF NOT EXISTS `loan_repayments` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `loan_id` BIGINT NOT NULL,
+  `created_by` BIGINT NOT NULL,
+  `amount` DECIMAL(15, 2) NOT NULL,
+  `paid_on` DATE NOT NULL,
+  `note` VARCHAR(255) DEFAULT NULL,
+  `created_at` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  KEY `idx_loan_repayments_loan` (`loan_id`, `paid_on`),
+  CONSTRAINT `chk_loan_repayments_amount_positive` CHECK (`amount` > 0),
+  CONSTRAINT `fk_loan_repayments_loan` FOREIGN KEY (`loan_id`) REFERENCES `loans` (`id`),
+  CONSTRAINT `fk_loan_repayments_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `family_budgets` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `family_id` BIGINT NOT NULL,

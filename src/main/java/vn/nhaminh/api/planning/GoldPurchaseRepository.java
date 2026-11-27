@@ -20,4 +20,11 @@ public interface GoldPurchaseRepository extends JpaRepository<GoldPurchase, Long
             """)
     BigDecimal sumCostInPeriod(
             @Param("familyId") Long familyId, @Param("start") LocalDate start, @Param("end") LocalDate end);
+
+    /** Tổng tiền mua vàng trước ngày :before. */
+    @Query("""
+            select coalesce(sum(g.totalCost), 0) from GoldPurchase g
+            where g.family.id = :familyId and g.purchasedOn < :before
+            """)
+    BigDecimal sumCostBefore(@Param("familyId") Long familyId, @Param("before") LocalDate before);
 }

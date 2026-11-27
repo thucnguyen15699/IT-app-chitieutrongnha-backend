@@ -45,6 +45,8 @@ class PlanningServiceTest {
     @Mock private FamilyTransactionRepository transactionRepository;
     @Mock private TransactionService transactionService;
     @Mock private GoldPurchaseRepository goldPurchaseRepository;
+    @Mock private vn.nhaminh.api.loan.LoanRepository loanRepository;
+    @Mock private vn.nhaminh.api.loan.LoanRepaymentRepository loanRepaymentRepository;
     @InjectMocks private PlanningService planningService;
 
     private final User user = new User("member", "Member", null, null, "encoded", true);
@@ -122,8 +124,26 @@ class PlanningServiceTest {
         when(plannedRepository.sumByFamilyAndStatus(null, PlannedExpense.Status.PENDING)).thenReturn(new BigDecimal("7000000"));
         when(plannedRepository.countByFamily_IdAndStatus(null, PlannedExpense.Status.PENDING)).thenReturn(2L);
         when(goldPurchaseRepository.sumCostInPeriod(eq(null), any(), any())).thenReturn(new BigDecimal("30000000"));
+        // Tháng này: vay 5tr, trả 2tr. Tổng cả thời gian: vay 8tr, trả 3tr → còn nợ 5tr.
+        when(loanRepository.sumBorrowedInPeriod(eq(null), any(), any())).thenReturn(new BigDecimal("5000000"));
+        when(loanRepaymentRepository.sumRepaidInPeriod(eq(null), any(), any())).thenReturn(new BigDecimal("2000000"));
+        when(loanRepository.sumBorrowed(null)).thenReturn(new BigDecimal("8000000"));
+        when(loanRepaymentRepository.sumRepaid(null)).thenReturn(new BigDecimal("3000000"));
+        // Đến hôm nay: thu 20tr, chi 12tr, gửi 1tr, vàng 0, vay 3tr, trả 1tr, sắp chi 7tr → ví còn 2tr.
+        when(transactionRepository.sumByTypeBefore(eq(null), eq(TransactionType.INCOME), any())).thenReturn(new BigDecimal("20000000"));
+        when(transactionRepository.sumByTypeBefore(eq(null), eq(TransactionType.EXPENSE), any())).thenReturn(new BigDecimal("12000000"));
+        when(contributionRepository.sumByFamilyTypeBefore(eq(null), eq(SavingsContribution.Type.DEPOSIT), any())).thenReturn(new BigDecimal("1000000"));
+        when(contributionRepository.sumByFamilyTypeBefore(eq(null), eq(SavingsContribution.Type.WITHDRAW), any())).thenReturn(BigDecimal.ZERO);
+        when(goldPurchaseRepository.sumCostBefore(eq(null), any())).thenReturn(BigDecimal.ZERO);
+        when(loanRepository.sumBorrowedBefore(eq(null), any())).thenReturn(new BigDecimal("3000000"));
+        when(loanRepaymentRepository.sumRepaidBefore(eq(null), any())).thenReturn(new BigDecimal("1000000"));
 
         var summary = planningService.summary("member", "2026-11");
+
+        assertEquals(new BigDecimal("3000000"), summary.loanNetInMonth());
+        assertEquals(new BigDecimal("5000000"), summary.totalDebt());
+        assertEquals(new BigDecimal("2000000"), summary.wallet().balance());
+        assertEquals(new BigDecimal("7000000"), summary.wallet().pending());
 
         assertEquals(new BigDecimal("7000000"), summary.pendingTotal());
         assertEquals(2L, summary.pendingCount());

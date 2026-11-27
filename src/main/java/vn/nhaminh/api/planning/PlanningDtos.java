@@ -65,11 +65,31 @@ public final class PlanningDtos {
      * savingsNetInMonth: tiền gửi tiết kiệm trừ tiền rút trong tháng (tiền đã rời khỏi ví).
      * totalSaved: tổng số dư của mọi mục tiết kiệm.
      * goldSpentInMonth: tiền mua vàng trong tháng (cũng là tiền đã rời khỏi ví).
+     * loanNetInMonth: tiền vay vào trừ tiền trả nợ trong tháng (dương = ví có thêm tiền).
+     * totalDebt: tổng số tiền còn nợ của mọi khoản vay (hiện tại).
+     * wallet: tiền trong ví hiện tại, tính trên MỌI giao dịch đến hôm nay (không phụ thuộc tháng đang xem).
      */
     public record PlanningSummary(
             BigDecimal pendingTotal,
             long pendingCount,
             BigDecimal savingsNetInMonth,
             BigDecimal totalSaved,
-            BigDecimal goldSpentInMonth) {}
+            BigDecimal goldSpentInMonth,
+            BigDecimal loanNetInMonth,
+            BigDecimal totalDebt,
+            WalletBreakdown wallet) {}
+
+    /**
+     * Công thức tiền trong ví (tính đến hôm nay):
+     * balance = income − expense − pending − savingsNet − gold + borrowed − repaid.
+     */
+    public record WalletBreakdown(
+            BigDecimal income,
+            BigDecimal expense,
+            BigDecimal pending,
+            BigDecimal savingsNet,
+            BigDecimal gold,
+            BigDecimal borrowed,
+            BigDecimal repaid,
+            BigDecimal balance) {}
 }

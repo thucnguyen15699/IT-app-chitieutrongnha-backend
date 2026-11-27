@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import vn.nhaminh.api.family.CurrentFamilyService;
 import vn.nhaminh.api.family.Family;
+import vn.nhaminh.api.loan.LoanRepaymentRepository;
+import vn.nhaminh.api.loan.LoanRepository;
 import vn.nhaminh.api.planning.PlanningDtos.ContributionRequest;
 import vn.nhaminh.api.planning.PlanningDtos.ContributionView;
 import vn.nhaminh.api.planning.PlanningDtos.PlannedExpenseRequest;
@@ -20,6 +22,7 @@ import vn.nhaminh.api.planning.PlanningDtos.PlannedExpenseView;
 import vn.nhaminh.api.planning.PlanningDtos.PlanningSummary;
 import vn.nhaminh.api.planning.PlanningDtos.SavingsGoalRequest;
 import vn.nhaminh.api.planning.PlanningDtos.SavingsGoalView;
+import vn.nhaminh.api.planning.PlanningDtos.WalletBreakdown;
 import vn.nhaminh.api.transaction.ExpenseCategory;
 import vn.nhaminh.api.transaction.ExpenseCategoryRepository;
 import vn.nhaminh.api.transaction.FamilyTransactionRepository;
@@ -42,6 +45,8 @@ public class PlanningService {
     private final FamilyTransactionRepository transactionRepository;
     private final TransactionService transactionService;
     private final GoldPurchaseRepository goldPurchaseRepository;
+    private final LoanRepository loanRepository;
+    private final LoanRepaymentRepository loanRepaymentRepository;
 
     public PlanningService(
             CurrentFamilyService currentFamily,
@@ -52,7 +57,9 @@ public class PlanningService {
             SpendingTargetRepository targetRepository,
             FamilyTransactionRepository transactionRepository,
             TransactionService transactionService,
-            GoldPurchaseRepository goldPurchaseRepository) {
+            GoldPurchaseRepository goldPurchaseRepository,
+            LoanRepository loanRepository,
+            LoanRepaymentRepository loanRepaymentRepository) {
         this.currentFamily = currentFamily;
         this.plannedRepository = plannedRepository;
         this.goalRepository = goalRepository;
@@ -62,6 +69,8 @@ public class PlanningService {
         this.transactionRepository = transactionRepository;
         this.transactionService = transactionService;
         this.goldPurchaseRepository = goldPurchaseRepository;
+        this.loanRepository = loanRepository;
+        this.loanRepaymentRepository = loanRepaymentRepository;
     }
 
     // ================= Khoản sắp phải chi =================
@@ -224,12 +233,38 @@ public class PlanningService {
         BigDecimal withdrawn = contributionRepository.sumByFamilyTypeAndPeriod(
                 familyId, SavingsContribution.Type.WITHDRAW, start, end);
         BigDecimal totalSaved = balancesByGoal(familyId).values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal loanNet = loanRepository.sumBorrowedInPeriod(familyId, start, end)
+                .subtract(loanRepaymentRepository.sumRepaidInPeriod(familyId, start, end));
+        BigDecimal totalDebt = loanRepository.sumBorrowed(familyId).subtract(loanRepaymentRepository.sumRepaid(familyId));
+        BigDecimal pending = plannedRepository.sumByFamilyAndStatus(familyId, PlannedExpense.Status.PENDING);
         return new PlanningSummary(
-                plannedRepository.sumByFamilyAndStatus(familyId, PlannedExpense.Status.PENDING),
+                pending,
                 plannedRepository.countByFamily_IdAndStatus(familyId, PlannedExpense.Status.PENDING),
                 deposited.subtract(withdrawn),
                 totalSaved,
-                goldPurchaseRepository.sumCostInPeriod(familyId, start, end));
+                goldPurchaseRepository.sumCostInPeriod(familyId, start, end),
+                loanNet,
+                totalDebt.max(BigDecimal.ZERO),
+                walletNow(familyId, pending));
+    }
+
+    /**
+     * Tiền trong ví HIỆN TẠI: cộng dồn mọi giao dịch đến hết hôm nay, rồi trừ các khoản sắp chi.
+     * Không phụ thuộc tháng đang xem, nên chuyển sang tháng khác vẫn là một con số.
+     */
+    private WalletBreakdown walletNow(Long familyId, BigDecimal pending) {
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        BigDecimal income = transactionRepository.sumByTypeBefore(familyId, TransactionType.INCOME, tomorrow.atStartOfDay());
+        BigDecimal expense = transactionRepository.sumByTypeBefore(familyId, TransactionType.EXPENSE, tomorrow.atStartOfDay());
+        BigDecimal deposited = contributionRepository.sumByFamilyTypeBefore(familyId, SavingsContribution.Type.DEPOSIT, tomorrow);
+        BigDecimal withdrawn = contributionRepository.sumByFamilyTypeBefore(familyId, SavingsContribution.Type.WITHDRAW, tomorrow);
+        BigDecimal savingsNet = deposited.subtract(withdrawn);
+        BigDecimal gold = goldPurchaseRepository.sumCostBefore(familyId, tomorrow);
+        BigDecimal borrowed = loanRepository.sumBorrowedBefore(familyId, tomorrow);
+        BigDecimal repaid = loanRepaymentRepository.sumRepaidBefore(familyId, tomorrow);
+        BigDecimal balance = income.subtract(expense).subtract(pending).subtract(savingsNet).subtract(gold)
+                .add(borrowed).subtract(repaid);
+        return new WalletBreakdown(income, expense, pending, savingsNet, gold, borrowed, repaid, balance);
     }
 
     // ================= Hỗ trợ =================
