@@ -518,25 +518,6 @@ WHERE NOT EXISTS (
     AND `existing`.`type` = `seed`.`type`
 );
 
-INSERT INTO `families` (`name`, `created_at`)
-SELECT 'Gia đình quản trị', CURRENT_TIMESTAMP(6)
-WHERE NOT EXISTS (
-  SELECT 1 FROM `families` WHERE `name` = 'Gia đình quản trị'
-);
-
-UPDATE `families` `family`
-JOIN `family_memberships` `membership` ON `membership`.`family_id` = `family`.`id`
-JOIN `users` ON `users`.`id` = `membership`.`user_id`
-SET `family`.`name` = 'Gia đình quản trị'
-WHERE `users`.`username` = 'admin';
-
-SET @admin_family_id = (
-  SELECT `id` FROM `families`
-  WHERE `name` = 'Gia đình quản trị'
-  ORDER BY `id`
-  LIMIT 1
-);
-
 -- This development-only account has a BCrypt hash; replace the password before deployment.
 INSERT INTO `users` (
   `username`, `name`, `email`, `phone_number`, `password_hash`,
@@ -556,8 +537,20 @@ UPDATE `users`
 SET `email` = NULL, `email_verified` = TRUE, `enabled` = TRUE
 WHERE `id` = @admin_user_id;
 
-INSERT IGNORE INTO `family_memberships` (`family_id`, `user_id`, `role`, `joined_at`)
-VALUES (@admin_family_id, @admin_user_id, 'OWNER', CURRENT_TIMESTAMP(6));
+-- Chỉ tạo "Gia đình quản trị" khi admin CHƯA thuộc gia đình nào (lần cài đặt đầu tiên).
+-- Admin đã nhận lời mời vào gia đình khác thì giữ nguyên: không đổi tên gia đình đó,
+-- không tự gắn admin lại vào gia đình quản trị mỗi lần khởi động.
+INSERT INTO `families` (`name`, `created_at`)
+SELECT 'Gia đình quản trị', CURRENT_TIMESTAMP(6) FROM DUAL
+WHERE NOT EXISTS (
+  SELECT 1 FROM `family_memberships` WHERE `user_id` = @admin_user_id
+);
+
+SET @admin_family_id = IF(ROW_COUNT() > 0, LAST_INSERT_ID(), NULL);
+
+INSERT INTO `family_memberships` (`family_id`, `user_id`, `role`, `joined_at`)
+SELECT @admin_family_id, @admin_user_id, 'OWNER', CURRENT_TIMESTAMP(6) FROM DUAL
+WHERE @admin_family_id IS NOT NULL;
 
 INSERT IGNORE INTO `user_roles` (`user_id`, `role_id`)
 SELECT @admin_user_id, `id` FROM `roles` WHERE `code` = 'ADMIN';

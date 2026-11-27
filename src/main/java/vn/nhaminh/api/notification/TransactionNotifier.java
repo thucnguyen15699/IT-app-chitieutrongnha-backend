@@ -2,6 +2,9 @@ package vn.nhaminh.api.notification;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import org.slf4j.Logger;
@@ -23,6 +26,9 @@ import vn.nhaminh.api.transaction.TransactionType;
 @Component
 public class TransactionNotifier {
     private static final Logger log = LoggerFactory.getLogger(TransactionNotifier.class);
+    private static final ZoneId VIETNAM = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final DateTimeFormatter DAY_MONTH = DateTimeFormatter.ofPattern("dd/MM");
+    private static final DateTimeFormatter DAY_MONTH_YEAR = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final FamilyMembershipRepository membershipRepository;
     private final PushService pushService;
@@ -51,6 +57,15 @@ public class TransactionNotifier {
     }
 
     static PushMessage toMessage(TransactionCreatedEvent event) {
+        return toMessage(event, LocalDate.now(VIETNAM));
+    }
+
+    /**
+     * today: "hôm nay" theo giờ Việt Nam (server có thể chạy UTC).
+     * Giao dịch không phải hôm nay thì ghi rõ ngày, để người nhận biết cần xem tháng nào.
+     * Bấm thông báo sẽ mở Tổng quan đúng ngày (và tháng) của giao dịch.
+     */
+    static PushMessage toMessage(TransactionCreatedEvent event, LocalDate today) {
         boolean expense = event.type() == TransactionType.EXPENSE;
         String title = event.automatic()
                 ? "Đã tự ghi khoản chi đến hạn"
@@ -58,10 +73,15 @@ public class TransactionNotifier {
         StringBuilder body = new StringBuilder()
                 .append(expense ? "-" : "+").append(formatMoney(event.amount()))
                 .append(" · ").append(event.categoryName());
+        LocalDate date = event.occurredOn();
+        if (date != null && !date.equals(today)) {
+            body.append(" · ngày ").append(date.format(date.getYear() == today.getYear() ? DAY_MONTH : DAY_MONTH_YEAR));
+        }
         if (expense && event.targetName() != null) body.append(" · cho ").append(event.targetName());
         if (event.note() != null && !event.note().isBlank()) body.append(" — ").append(event.note());
         if (event.automatic()) body.append(" (do ").append(event.actorName()).append(" lên kế hoạch)");
-        return new PushMessage(title, body.toString(), "/#/tong-quan", "tx-" + event.transactionId());
+        String url = date == null ? "/#/tong-quan" : "/#/tong-quan?ngay=" + date;
+        return new PushMessage(title, body.toString(), url, "tx-" + event.transactionId());
     }
 
     static String formatMoney(BigDecimal amount) {

@@ -64,7 +64,7 @@ public class FamilyService {
                 .findByFamily_IdAndStatusOrderByCreatedAtDesc(family.getId(), FamilyInvitation.Status.PENDING).stream()
                 .map(FamilyService::toView)
                 .toList();
-        return new FamilyView(family.getId(), family.getName(), myRole, OWNER.equals(myRole), isMember, members, pending);
+        return new FamilyView(family.getId(), family.getName(), myRole, isMember, isMember, members, pending);
     }
 
     /** Người dùng chưa thuộc gia đình nào (vd. đăng ký để chờ lời mời) tự tạo gia đình. */
@@ -79,12 +79,10 @@ public class FamilyService {
         return myFamily(username);
     }
 
+    /** Mọi thành viên đều đổi được tên gia đình của chính mình (admin đang "chỉ xem" thì không). */
     @Transactional
     public FamilyView rename(String username, String name) {
         FamilyMembership membership = ownMembership(username);
-        if (!OWNER.equals(membership.getRole())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chỉ chủ gia đình mới đổi được tên gia đình.");
-        }
         membership.getFamily().rename(name.trim());
         return myFamily(username);
     }

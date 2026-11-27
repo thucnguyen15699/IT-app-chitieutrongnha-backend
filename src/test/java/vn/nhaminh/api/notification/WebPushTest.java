@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
+import java.time.LocalDate;
 import java.security.interfaces.ECPublicKey;
 import java.util.Arrays;
 import java.util.List;
@@ -116,16 +117,37 @@ class WebPushTest {
     @Test
     void notificationTextDescribesTheTransaction() {
         var message = TransactionNotifier.toMessage(new TransactionCreatedEvent(
-                5L, 1L, 2L, "Mẹ", TransactionType.EXPENSE, new BigDecimal("250000"), "Ăn uống", "Con", "mua sữa", false));
+                5L, 1L, 2L, "Mẹ", TransactionType.EXPENSE, new BigDecimal("250000"), "Ăn uống", "Con", "mua sữa", false, null));
 
         assertEquals("Mẹ vừa thêm khoản chi", message.title());
         assertEquals("-250.000 ₫ · Ăn uống · cho Con — mua sữa", message.body());
         assertEquals("tx-5", message.tag());
 
         var income = TransactionNotifier.toMessage(new TransactionCreatedEvent(
-                6L, 1L, 2L, "Bố", TransactionType.INCOME, new BigDecimal("15000000"), "Lương", null, null, false));
+                6L, 1L, 2L, "Bố", TransactionType.INCOME, new BigDecimal("15000000"), "Lương", null, null, false, null));
         assertEquals("Bố vừa thêm khoản thu", income.title());
         assertEquals("+15.000.000 ₫ · Lương", income.body());
+    }
+
+    @Test
+    void pastDatedTransactionShowsDateAndOpensThatDay() {
+        LocalDate today = LocalDate.of(2026, 11, 27);
+        var past = TransactionNotifier.toMessage(new TransactionCreatedEvent(
+                7L, 1L, 2L, "Hương", TransactionType.EXPENSE, new BigDecimal("2500000"), "Mua sắm", null, null, false,
+                LocalDate.of(2026, 10, 1)), today);
+        assertEquals("-2.500.000 ₫ · Mua sắm · ngày 01/10", past.body());
+        assertEquals("/#/tong-quan?ngay=2026-10-01", past.url());
+
+        var lastYear = TransactionNotifier.toMessage(new TransactionCreatedEvent(
+                8L, 1L, 2L, "Hương", TransactionType.INCOME, new BigDecimal("1000000"), "Lương", null, null, false,
+                LocalDate.of(2025, 12, 31)), today);
+        assertEquals("+1.000.000 ₫ · Lương · ngày 31/12/2025", lastYear.body());
+
+        var sameDay = TransactionNotifier.toMessage(new TransactionCreatedEvent(
+                9L, 1L, 2L, "Hương", TransactionType.INCOME, new BigDecimal("1000000"), "Lương", null, null, false,
+                today), today);
+        assertEquals("+1.000.000 ₫ · Lương", sameDay.body());
+        assertEquals("/#/tong-quan?ngay=2026-11-27", sameDay.url());
     }
 
     @Test
@@ -142,7 +164,7 @@ class WebPushTest {
         when(push.sendToUsers(any(), any())).thenReturn(new PushService.SendResult(1, 0));
 
         new TransactionNotifier(memberships, push).onTransactionCreated(new TransactionCreatedEvent(
-                5L, 10L, 1L, "Mẹ", TransactionType.EXPENSE, new BigDecimal("250000"), "Ăn uống", null, "mua sữa", false));
+                5L, 10L, 1L, "Mẹ", TransactionType.EXPENSE, new BigDecimal("250000"), "Ăn uống", null, "mua sữa", false, null));
 
         verify(push).sendToUsers(eq(List.of(2L)), any());
     }
@@ -156,7 +178,7 @@ class WebPushTest {
         PushService push = mock(PushService.class);
 
         new TransactionNotifier(memberships, push).onTransactionCreated(new TransactionCreatedEvent(
-                5L, 10L, 1L, "Mẹ", TransactionType.INCOME, BigDecimal.TEN, "Lương", null, null, false));
+                5L, 10L, 1L, "Mẹ", TransactionType.INCOME, BigDecimal.TEN, "Lương", null, null, false, null));
 
         verify(push, never()).sendToUsers(any(), any());
     }
@@ -174,7 +196,7 @@ class WebPushTest {
         PushService push = mock(PushService.class);
         when(push.sendToUsers(any(), any())).thenReturn(new PushService.SendResult(2, 0));
         var event = new TransactionCreatedEvent(
-                99L, 10L, 1L, "Mẹ", TransactionType.EXPENSE, new BigDecimal("5000000"), "Giáo dục", null, "Học phí kỳ 2", true);
+                99L, 10L, 1L, "Mẹ", TransactionType.EXPENSE, new BigDecimal("5000000"), "Giáo dục", null, "Học phí kỳ 2", true, null);
 
         new TransactionNotifier(memberships, push).onTransactionCreated(event);
 

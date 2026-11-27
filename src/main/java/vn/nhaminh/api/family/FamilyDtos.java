@@ -18,7 +18,7 @@ public final class FamilyDtos {
 
     /**
      * myRole: OWNER / MEMBER, hoặc ADMIN_VIEW khi quản trị viên đang xem gia đình khác (chỉ đọc).
-     * canManage: được đổi tên gia đình (chủ gia đình).
+     * canManage: được đổi tên gia đình (mọi thành viên; admin đang chỉ xem thì không).
      */
     public record FamilyView(
             Long id,

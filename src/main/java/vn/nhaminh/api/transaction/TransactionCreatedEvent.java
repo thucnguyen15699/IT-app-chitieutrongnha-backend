@@ -1,10 +1,12 @@
 package vn.nhaminh.api.transaction;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * Phát ra khi có khoản thu/chi mới (kể cả khi bấm "Đã chi" ở khoản sắp chi).
  * automatic = true: hệ thống tự ghi vì khoản sắp chi đã đến hạn (actor là người lập khoản đó).
+ * occurredOn: ngày của giao dịch (có thể là ngày trong quá khứ).
  */
 public record TransactionCreatedEvent(
         Long transactionId,
@@ -16,4 +18,5 @@ public record TransactionCreatedEvent(
         String categoryName,
         String targetName,
         String note,
-        boolean automatic) {}
+        boolean automatic,
+        LocalDate occurredOn) {}

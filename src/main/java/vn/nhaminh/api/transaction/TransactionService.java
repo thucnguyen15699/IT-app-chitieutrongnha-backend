@@ -151,7 +151,7 @@ public class TransactionService {
         // Báo cho các thành viên khác (gửi sau khi lưu xong, xem TransactionNotifier).
         events.publishEvent(new TransactionCreatedEvent(
                 view.id(), family.getId(), user.getId(), user.getName(), view.type(), view.amount(),
-                view.categoryName(), view.targetName(), view.note(), automatic));
+                view.categoryName(), view.targetName(), view.note(), automatic, view.occurredOn()));
         return view;
     }
 
