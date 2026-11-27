@@ -93,4 +93,10 @@ public class TransactionController {
             @Valid @RequestBody TransactionRequest request) {
         return transactionService.update(authentication.getName(), id, request);
     }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(Authentication authentication, @PathVariable Long id) {
+        transactionService.delete(authentication.getName(), id);
+    }
 }

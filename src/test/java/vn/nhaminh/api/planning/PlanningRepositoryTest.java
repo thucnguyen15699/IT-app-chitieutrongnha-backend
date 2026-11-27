@@ -1,6 +1,7 @@
 package vn.nhaminh.api.planning;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -12,6 +13,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import vn.nhaminh.api.family.Family;
 import vn.nhaminh.api.transaction.ExpenseCategory;
+import vn.nhaminh.api.transaction.FamilyTransaction;
+import vn.nhaminh.api.transaction.FamilyTransactionRepository;
 import vn.nhaminh.api.transaction.TransactionType;
 import vn.nhaminh.api.user.User;
 
@@ -29,6 +32,7 @@ class PlanningRepositoryTest {
     @Autowired private SavingsGoalRepository goalRepository;
     @Autowired private SavingsContributionRepository contributionRepository;
     @Autowired private TestEntityManager entityManager;
+    @Autowired private FamilyTransactionRepository transactionRepository;
 
     @Test
     void queriesPlannedExpensesAndSavingsBalances() {
@@ -67,5 +71,26 @@ class PlanningRepositoryTest {
         assertEquals("Giáo dục", loaded.getCategory().getName());
         assertEquals("Thành viên", loaded.getCreatedBy().getName());
         assertEquals(2, plannedRepository.findDuePendingIds(today.plusDays(30)).size());
+    }
+
+    @Test
+    void deletingTransactionPaidFromPlannedExpenseKeepsItPaid() {
+        Family family = entityManager.persistAndFlush(new Family("Nhà mình"));
+        User user = entityManager.persistAndFlush(new User("member2", "Thành viên", null, null, "encoded", true));
+        ExpenseCategory education = entityManager.persistAndFlush(
+                new ExpenseCategory(null, "Giáo dục", TransactionType.EXPENSE));
+        FamilyTransaction paid = entityManager.persistAndFlush(new FamilyTransaction(family, education, null, user,
+                TransactionType.EXPENSE, new BigDecimal("5000000"), "Học phí", LocalDate.now().atStartOfDay()));
+        PlannedExpense planned = new PlannedExpense(family, education, null, user, new BigDecimal("5000000"), "Học phí", LocalDate.now());
+        planned.markPaid(paid);
+        Long plannedId = entityManager.persistAndFlush(planned).getId();
+
+        assertEquals(1, transactionRepository.detachFromPlannedExpenses(paid.getId()));
+        transactionRepository.deleteById(paid.getId());
+        entityManager.flush(); // khóa ngoại paid_transaction_id không còn chặn việc xóa
+        entityManager.clear();
+
+        assertTrue(transactionRepository.findById(paid.getId()).isEmpty());
+        assertEquals(PlannedExpense.Status.PAID, plannedRepository.findById(plannedId).orElseThrow().getStatus());
     }
 }

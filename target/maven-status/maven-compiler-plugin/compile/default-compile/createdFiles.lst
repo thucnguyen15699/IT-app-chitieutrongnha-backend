@@ -46,6 +46,7 @@ vn\nhaminh\api\family\FamilyDtos$MemberView.class
 vn\nhaminh\api\notification\TransactionNotifier.class
 vn\nhaminh\api\planning\PlanningController.class
 vn\nhaminh\api\transaction\TransactionDtos$CreateCategoryRequest.class
+vn\nhaminh\api\transaction\TransactionDtos$StatsItem.class
 vn\nhaminh\api\planning\PlannedExpense$Status.class
 vn\nhaminh\api\auth\AuthDtos$UserProfile.class
 vn\nhaminh\api\notification\PushService$SendResult.class
@@ -102,6 +103,7 @@ vn\nhaminh\api\auth\RoleRepository.class
 vn\nhaminh\api\transaction\TransactionDtos$MonthTotal.class
 vn\nhaminh\api\transaction\TransactionDtos.class
 vn\nhaminh\api\family\FamilyController.class
+vn\nhaminh\api\transaction\TransactionDtos$StatsMonthPart.class
 vn\nhaminh\api\transaction\TransactionDtos$TransactionRequest.class
 vn\nhaminh\api\transaction\TransactionService.class
 vn\nhaminh\api\transaction\TransactionDtos$CategoryView.class

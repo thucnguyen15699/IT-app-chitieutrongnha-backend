@@ -173,6 +173,16 @@ public class TransactionService {
         return toView(transactionRepository.save(transaction));
     }
 
+    /** Xóa giao dịch nhập sai. Chỉ thành viên trong gia đình (admin đang "chỉ xem" bị chặn ở findFamily). */
+    @Transactional
+    public void delete(String username, Long transactionId) {
+        Family family = findFamily(username);
+        FamilyTransaction transaction = transactionRepository.findByIdAndFamily_Id(transactionId, family.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy giao dịch trong gia đình."));
+        transactionRepository.detachFromPlannedExpenses(transaction.getId());
+        transactionRepository.deleteById(transaction.getId());
+    }
+
     private User findUser(String username) {
         return currentFamily.findUser(username);
     }

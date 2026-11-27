@@ -4,11 +4,20 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface FamilyTransactionRepository extends JpaRepository<FamilyTransaction, Long> {
     Optional<FamilyTransaction> findByIdAndFamily_Id(Long id, Long familyId);
+
+    /**
+     * Trước khi xóa giao dịch: bỏ liên kết từ khoản sắp chi đã "Đã chi" bằng giao dịch này.
+     * Khoản sắp chi vẫn giữ trạng thái đã chi (nếu quay về "chưa chi" thì hệ thống sẽ tự ghi lại).
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update PlannedExpense p set p.paidTransaction = null where p.paidTransaction.id = :transactionId")
+    int detachFromPlannedExpenses(@Param("transactionId") Long transactionId);
 
     boolean existsByCategory_Id(Long categoryId);
 
