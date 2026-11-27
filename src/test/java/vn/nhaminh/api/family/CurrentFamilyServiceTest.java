@@ -51,8 +51,8 @@ class CurrentFamilyServiceTest {
     }
 
     @Test
-    void regularUserCannotSwitchFamilyWithHeader() {
-        request("GET", "99", "ROLE_MEMBER");
+    void withoutHeaderUsesFirstJoinedFamily() {
+        request("GET", null, "ROLE_MEMBER");
         when(membershipRepository.findFirstByUserIdOrderByJoinedAtAsc(null))
                 .thenReturn(Optional.of(new FamilyMembership(own, user, "OWNER")));
 
@@ -60,11 +60,31 @@ class CurrentFamilyServiceTest {
     }
 
     @Test
+    void memberCanSwitchToAnotherFamilyTheyJoinedAndWriteThere() {
+        request("POST", "99", "ROLE_MEMBER");
+        Family grandparents = new Family("Bên nội");
+        when(membershipRepository.findByFamily_IdAndUser_Id(99L, null))
+                .thenReturn(Optional.of(new FamilyMembership(grandparents, user, "MEMBER")));
+
+        assertSame(grandparents, currentFamily.findFamily(user));
+    }
+
+    @Test
+    void regularUserCannotOpenFamilyTheyWereNotInvitedTo() {
+        request("GET", "99", "ROLE_MEMBER");
+        when(membershipRepository.findByFamily_IdAndUser_Id(99L, null)).thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> currentFamily.findFamily(user));
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+    }
+
+    @Test
     void adminCanViewAnotherFamily() {
         request("GET", "99", "ROLE_ADMIN");
         Family other = mock(Family.class);
-        when(membershipRepository.findFirstByUserIdOrderByJoinedAtAsc(null))
-                .thenReturn(Optional.of(new FamilyMembership(own, user, "OWNER")));
+        when(membershipRepository.findByFamily_IdAndUser_Id(99L, null)).thenReturn(Optional.empty());
         when(familyRepository.findById(99L)).thenReturn(Optional.of(other));
 
         assertSame(other, currentFamily.findFamily(user));
@@ -73,8 +93,7 @@ class CurrentFamilyServiceTest {
     @Test
     void adminCannotWriteIntoAnotherFamily() {
         request("POST", "99", "ROLE_ADMIN");
-        when(membershipRepository.findFirstByUserIdOrderByJoinedAtAsc(null))
-                .thenReturn(Optional.of(new FamilyMembership(own, user, "OWNER")));
+        when(membershipRepository.findByFamily_IdAndUser_Id(99L, null)).thenReturn(Optional.empty());
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> currentFamily.findFamily(user));

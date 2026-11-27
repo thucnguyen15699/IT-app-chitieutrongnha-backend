@@ -45,11 +45,23 @@ public class CurrentFamilyService {
         return findFamily(findUser(username));
     }
 
-    /** Gia đình đang thao tác: gia đình của người dùng, hoặc gia đình admin chọn để xem. */
+    /**
+     * Gia đình đang thao tác.
+     * <ul>
+     *   <li>Có header {@code X-Family-Id} và người dùng là thành viên gia đình đó → dùng gia đình đó (đọc + ghi).</li>
+     *   <li>Có header nhưng không phải thành viên: admin được XEM (chỉ GET); người khác bị từ chối.</li>
+     *   <li>Không có header → gia đình tham gia sớm nhất.</li>
+     * </ul>
+     */
     public Family findFamily(User user) {
-        Optional<Family> own = findOwnFamily(user);
-        Long requested = adminRequestedFamilyId();
-        if (requested != null && own.map(family -> !requested.equals(family.getId())).orElse(true)) {
+        Long requested = requestedFamilyId();
+        if (requested != null) {
+            Optional<FamilyMembership> membership = membershipRepository.findByFamily_IdAndUser_Id(requested, user.getId());
+            if (membership.isPresent()) return membership.get().getFamily();
+            if (!isAdmin()) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "Bạn chưa là thành viên gia đình này. Cần được mời và đồng ý lời mời trước.");
+            }
             HttpServletRequest request = currentRequest();
             if (request != null && !"GET".equalsIgnoreCase(request.getMethod())) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN,
@@ -58,25 +70,31 @@ public class CurrentFamilyService {
             return familyRepository.findById(requested)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy gia đình."));
         }
-        return own.orElseThrow(() -> new ResponseStatusException(
+        return findOwnFamily(user).orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.NOT_FOUND, "Tài khoản chưa thuộc gia đình nào. Hãy tạo gia đình hoặc nhận lời mời."));
     }
 
-    /** Gia đình thật của người dùng (bỏ qua lựa chọn của admin). */
+    /** Gia đình mặc định của người dùng: gia đình tham gia sớm nhất (bỏ qua lựa chọn qua header). */
     public Optional<Family> findOwnFamily(User user) {
         return membershipRepository.findFirstByUserIdOrderByJoinedAtAsc(user.getId()).map(FamilyMembership::getFamily);
     }
 
+    /**
+     * Tư cách thành viên của người dùng trong gia đình ĐANG CHỌN (header {@code X-Family-Id}, mặc định gia đình đầu tiên).
+     * Rỗng khi admin đang chỉ xem một gia đình mình không thuộc về.
+     */
     public Optional<FamilyMembership> findOwnMembership(User user) {
+        Long requested = requestedFamilyId();
+        if (requested != null) return membershipRepository.findByFamily_IdAndUser_Id(requested, user.getId());
         return membershipRepository.findFirstByUserIdOrderByJoinedAtAsc(user.getId());
     }
 
-    /** Id gia đình admin muốn xem; null nếu không phải admin hoặc không gửi header. */
-    private Long adminRequestedFamilyId() {
+    /** Id gia đình được chọn qua header; null nếu không gửi. */
+    private Long requestedFamilyId() {
         HttpServletRequest request = currentRequest();
         if (request == null) return null;
         String header = request.getHeader(FAMILY_HEADER);
-        if (header == null || header.isBlank() || !isAdmin()) return null;
+        if (header == null || header.isBlank()) return null;
         try {
             return Long.valueOf(header.trim());
         } catch (NumberFormatException exception) {

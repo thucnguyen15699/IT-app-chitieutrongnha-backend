@@ -5,13 +5,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import vn.nhaminh.api.config.MailService;
+import vn.nhaminh.api.family.FamilyDtos.FamilyOption;
 import vn.nhaminh.api.family.FamilyDtos.FamilyView;
 import vn.nhaminh.api.family.FamilyDtos.IncomingInvitationView;
 import vn.nhaminh.api.family.FamilyDtos.InvitationView;
@@ -50,9 +52,13 @@ public class FamilyService {
     @Transactional(readOnly = true)
     public FamilyView myFamily(String username) {
         User user = currentFamily.findUser(username);
-        Family family = currentFamily.findFamily(user); // admin có thể đang xem gia đình khác
+        Family family = currentFamily.findFamily(user); // gia đình đang chọn; admin có thể đang xem gia đình khác
         Optional<FamilyMembership> own = currentFamily.findOwnMembership(user)
                 .filter(membership -> membership.getFamily().getId().equals(family.getId()));
+        return view(user, family, own);
+    }
+
+    private FamilyView view(User user, Family family, Optional<FamilyMembership> own) {
         String myRole = own.map(FamilyMembership::getRole).orElse("ADMIN_VIEW");
         boolean isMember = own.isPresent();
 
@@ -67,16 +73,16 @@ public class FamilyService {
         return new FamilyView(family.getId(), family.getName(), myRole, isMember, isMember, members, pending);
     }
 
-    /** Người dùng chưa thuộc gia đình nào (vd. đăng ký để chờ lời mời) tự tạo gia đình. */
+    /**
+     * Tự tạo một gia đình mới và làm chủ (người chưa có gia đình, hoặc đã có nhưng muốn lập thêm,
+     * vd. "Bên nội"). Vào gia đình của NGƯỜI KHÁC thì vẫn bắt buộc phải được mời.
+     */
     @Transactional
     public FamilyView createFamily(String username, String name) {
         User user = currentFamily.findUser(username);
-        if (currentFamily.findOwnFamily(user).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bạn đã thuộc một gia đình rồi.");
-        }
         Family family = familyRepository.save(new Family(name.trim()));
-        membershipRepository.save(new FamilyMembership(family, user, OWNER));
-        return myFamily(username);
+        FamilyMembership membership = membershipRepository.save(new FamilyMembership(family, user, OWNER));
+        return view(user, family, Optional.of(membership));
     }
 
     /** Mọi thành viên đều đổi được tên gia đình của chính mình (admin đang "chỉ xem" thì không). */
@@ -153,12 +159,12 @@ public class FamilyService {
     @Transactional(readOnly = true)
     public List<IncomingInvitationView> incoming(String username) {
         User user = currentFamily.findUser(username);
-        Optional<Family> own = currentFamily.findOwnFamily(user);
-        Long ownId = own.map(Family::getId).orElse(null);
-        String ownName = own.map(Family::getName).orElse(null);
+        Set<Long> joined = membershipRepository.findByUserId(user.getId()).stream()
+                .map(membership -> membership.getFamily().getId())
+                .collect(Collectors.toSet());
         List<IncomingInvitationView> result = new ArrayList<>();
         matchingInvitations(user).forEach((invitation, matchedBy) -> {
-            if (Objects.equals(invitation.getFamily().getId(), ownId)) return; // đã ở gia đình đó
+            if (joined.contains(invitation.getFamily().getId())) return; // đã ở gia đình đó
             result.add(new IncomingInvitationView(
                     invitation.getId(),
                     invitation.getFamily().getId(),
@@ -167,34 +173,60 @@ public class FamilyService {
                     invitation.getMessage(),
                     invitation.getCreatedAt(),
                     matchedBy,
-                    ownName));
+                    null)); // không còn phải rời gia đình cũ: một người ở được nhiều gia đình
         });
         return result;
     }
 
     /**
-     * Đồng ý: rời gia đình hiện tại (nếu có) và vào gia đình mời.
-     * Nếu người rời đi là chủ và còn người ở lại, người vào sớm nhất được làm chủ.
+     * Đồng ý: vào thêm gia đình mời, VẪN giữ các gia đình đang có (một người ở được nhiều gia đình,
+     * vd. gia đình nhỏ, bên nội, bên ngoại). Chỉ vào được gia đình đã mời mình.
+     *
+     * @return id gia đình vừa vào, để giao diện chuyển sang ngay.
      */
     @Transactional
-    public void accept(String username, Long invitationId) {
+    public Long accept(String username, Long invitationId) {
         User user = currentFamily.findUser(username);
         FamilyInvitation invitation = findIncoming(user, invitationId);
+        Family family = invitation.getFamily();
+        if (membershipRepository.findByFamily_IdAndUser_Id(family.getId(), user.getId()).isEmpty()) {
+            membershipRepository.save(new FamilyMembership(family, user, MEMBER));
+        }
+        invitation.respond(FamilyInvitation.Status.ACCEPTED, user);
+        return family.getId();
+    }
 
-        for (FamilyMembership old : membershipRepository.findByUserId(user.getId())) {
-            Long oldFamilyId = old.getFamily().getId();
-            boolean wasOwner = OWNER.equals(old.getRole());
-            membershipRepository.delete(old);
-            membershipRepository.flush();
-            if (wasOwner) {
-                List<FamilyMembership> remaining = membershipRepository.findMembers(oldFamilyId);
-                if (!remaining.isEmpty() && remaining.stream().noneMatch(m -> OWNER.equals(m.getRole()))) {
-                    remaining.getFirst().promoteToOwner();
-                }
+    /** Các gia đình người dùng đang tham gia (để chọn chuyển qua lại). */
+    @Transactional(readOnly = true)
+    public List<FamilyOption> myFamilies(String username) {
+        User user = currentFamily.findUser(username);
+        return membershipRepository.findFamiliesOfUser(user.getId()).stream()
+                .map(m -> new FamilyOption(
+                        m.getFamily().getId(),
+                        m.getFamily().getName(),
+                        m.getRole(),
+                        membershipRepository.countByFamily_Id(m.getFamily().getId())))
+                .toList();
+    }
+
+    /**
+     * Rời gia đình đang chọn. Dữ liệu của gia đình vẫn giữ cho những người ở lại;
+     * nếu người rời là chủ và còn người khác, người vào sớm nhất được làm chủ.
+     * Muốn vào lại thì phải được mời lại.
+     */
+    @Transactional
+    public void leave(String username) {
+        FamilyMembership membership = ownMembership(username);
+        Long familyId = membership.getFamily().getId();
+        boolean wasOwner = OWNER.equals(membership.getRole());
+        membershipRepository.delete(membership);
+        membershipRepository.flush();
+        if (wasOwner) {
+            List<FamilyMembership> remaining = membershipRepository.findMembers(familyId);
+            if (!remaining.isEmpty() && remaining.stream().noneMatch(m -> OWNER.equals(m.getRole()))) {
+                remaining.getFirst().promoteToOwner();
             }
         }
-        membershipRepository.save(new FamilyMembership(invitation.getFamily(), user, MEMBER));
-        invitation.respond(FamilyInvitation.Status.ACCEPTED, user);
     }
 
     @Transactional

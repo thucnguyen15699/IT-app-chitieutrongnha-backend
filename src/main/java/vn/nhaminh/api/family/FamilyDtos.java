@@ -49,4 +49,10 @@ public final class FamilyDtos {
             String currentFamilyName) {}
 
     public record MessageResponse(String message) {}
+
+    /** Một gia đình người dùng đang tham gia (để chuyển qua lại). */
+    public record FamilyOption(Long id, String name, String role, long memberCount) {}
+
+    /** Kết quả đồng ý lời mời: id gia đình vừa vào. */
+    public record AcceptResult(String message, Long familyId) {}
 }

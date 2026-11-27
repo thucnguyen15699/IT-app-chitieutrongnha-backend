@@ -11,6 +11,19 @@ public interface FamilyMembershipRepository extends JpaRepository<FamilyMembersh
 
     List<FamilyMembership> findByUserId(Long userId);
 
+    Optional<FamilyMembership> findByFamily_IdAndUser_Id(Long familyId, Long userId);
+
+    /** Mọi gia đình người dùng đang tham gia, theo thứ tự tham gia. */
+    @Query("""
+            select m from FamilyMembership m
+            join fetch m.family
+            where m.user.id = :userId
+            order by m.joinedAt
+            """)
+    List<FamilyMembership> findFamiliesOfUser(@Param("userId") Long userId);
+
+    long countByFamily_Id(Long familyId);
+
     @Query("""
             select m from FamilyMembership m
             join fetch m.user

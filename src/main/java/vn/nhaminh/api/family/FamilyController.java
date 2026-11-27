@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import vn.nhaminh.api.family.FamilyDtos.AcceptResult;
 import vn.nhaminh.api.family.FamilyDtos.FamilyNameRequest;
+import vn.nhaminh.api.family.FamilyDtos.FamilyOption;
 import vn.nhaminh.api.family.FamilyDtos.FamilyView;
 import vn.nhaminh.api.family.FamilyDtos.IncomingInvitationView;
 import vn.nhaminh.api.family.FamilyDtos.InviteRequest;
@@ -63,9 +65,22 @@ public class FamilyController {
     }
 
     @PostMapping("/invitations/{id}/accept")
-    public MessageResponse accept(Authentication authentication, @PathVariable Long id) {
-        familyService.accept(authentication.getName(), id);
-        return new MessageResponse("Bạn đã tham gia gia đình mới.");
+    public AcceptResult accept(Authentication authentication, @PathVariable Long id) {
+        Long familyId = familyService.accept(authentication.getName(), id);
+        return new AcceptResult("Bạn đã tham gia gia đình mới.", familyId);
+    }
+
+    /** Các gia đình mình đang tham gia. */
+    @GetMapping("/families/mine")
+    public List<FamilyOption> myFamilies(Authentication authentication) {
+        return familyService.myFamilies(authentication.getName());
+    }
+
+    /** Rời gia đình đang chọn (header X-Family-Id). */
+    @PostMapping("/family/leave")
+    public MessageResponse leave(Authentication authentication) {
+        familyService.leave(authentication.getName());
+        return new MessageResponse("Bạn đã rời gia đình.");
     }
 
     @PostMapping("/invitations/{id}/decline")

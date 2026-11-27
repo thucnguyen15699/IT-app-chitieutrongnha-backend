@@ -123,7 +123,6 @@ class FamilyServiceTest {
         User mom = user(1, "Mẹ", null, true, null);
         FamilyInvitation byPhone = new FamilyInvitation(home, mom, null, "0912345678", "Vào nhà nhé");
         when(currentFamily.findUser("bo")).thenReturn(dad);
-        when(currentFamily.findOwnFamily(dad)).thenReturn(Optional.empty());
         when(invitationRepository.findByPhoneNumberAndStatus("0912345678", FamilyInvitation.Status.PENDING))
                 .thenReturn(List.of(byPhone));
 
@@ -136,31 +135,57 @@ class FamilyServiceTest {
     }
 
     @Test
-    void acceptingMovesUserAndPromotesRemainingMemberInOldFamily() {
-        Family oldHome = family(20, "Nhà cũ");
-        Family newHome = family(10, "Nhà Mình");
+    void acceptingAddsNewFamilyAndKeepsTheOldOne() {
+        Family newHome = family(10, "Bên nội");
         User dad = user(2, "Bố", "bo@example.test", true, null);
-        User grandma = user(3, "Bà", null, true, null);
-        FamilyMembership dadOld = new FamilyMembership(oldHome, dad, "OWNER");
-        FamilyMembership grandmaOld = new FamilyMembership(oldHome, grandma, "MEMBER");
         FamilyInvitation invitation = mock(FamilyInvitation.class);
         when(invitation.getId()).thenReturn(5L);
         when(invitation.getFamily()).thenReturn(newHome);
         when(currentFamily.findUser("bo")).thenReturn(dad);
         when(invitationRepository.findByEmailIgnoreCaseAndStatus("bo@example.test", FamilyInvitation.Status.PENDING))
                 .thenReturn(List.of(invitation));
-        when(membershipRepository.findByUserId(2L)).thenReturn(List.of(dadOld));
-        when(membershipRepository.findMembers(20L)).thenReturn(List.of(grandmaOld));
+        when(membershipRepository.findByFamily_IdAndUser_Id(10L, 2L)).thenReturn(Optional.empty());
 
-        familyService.accept("bo", 5L);
+        Long joined = familyService.accept("bo", 5L);
 
-        verify(membershipRepository).delete(dadOld);
-        assertEquals("OWNER", grandmaOld.getRole());
+        assertEquals(10L, joined);
+        verify(membershipRepository, never()).delete(any());
         ArgumentCaptor<FamilyMembership> added = ArgumentCaptor.forClass(FamilyMembership.class);
         verify(membershipRepository).save(added.capture());
         assertEquals(newHome, added.getValue().getFamily());
         assertEquals("MEMBER", added.getValue().getRole());
         verify(invitation).respond(FamilyInvitation.Status.ACCEPTED, dad);
+    }
+
+    @Test
+    void incomingHidesInvitationsToFamiliesAlreadyJoined() {
+        Family home = family(10, "Nhà Mình");
+        User dad = user(2, "Bố", "bo@example.test", true, null);
+        User mom = user(1, "Mẹ", null, true, null);
+        FamilyInvitation again = new FamilyInvitation(home, mom, "bo@example.test", null, null);
+        when(currentFamily.findUser("bo")).thenReturn(dad);
+        when(invitationRepository.findByEmailIgnoreCaseAndStatus("bo@example.test", FamilyInvitation.Status.PENDING))
+                .thenReturn(List.of(again));
+        when(membershipRepository.findByUserId(2L)).thenReturn(List.of(new FamilyMembership(home, dad, "MEMBER")));
+
+        assertEquals(0, familyService.incoming("bo").size());
+    }
+
+    @Test
+    void leavingAsOwnerPromotesEarliestRemainingMember() {
+        Family home = family(20, "Bên ngoại");
+        User dad = user(2, "Bố", null, true, null);
+        User grandma = user(3, "Bà", null, true, null);
+        FamilyMembership dadMembership = new FamilyMembership(home, dad, "OWNER");
+        FamilyMembership grandmaMembership = new FamilyMembership(home, grandma, "MEMBER");
+        when(currentFamily.findUser("bo")).thenReturn(dad);
+        when(currentFamily.findOwnMembership(dad)).thenReturn(Optional.of(dadMembership));
+        when(membershipRepository.findMembers(20L)).thenReturn(List.of(grandmaMembership));
+
+        familyService.leave("bo");
+
+        verify(membershipRepository).delete(dadMembership);
+        assertEquals("OWNER", grandmaMembership.getRole());
     }
 
     @Test
