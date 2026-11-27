@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.function.Function;
 import vn.nhaminh.api.transaction.TransactionDtos.MonthTotal;
 import vn.nhaminh.api.transaction.TransactionDtos.StatsGroup;
+import vn.nhaminh.api.transaction.TransactionDtos.StatsItem;
+import vn.nhaminh.api.transaction.TransactionDtos.StatsMonthPart;
 import vn.nhaminh.api.transaction.TransactionDtos.StatsPart;
 import vn.nhaminh.api.transaction.TransactionDtos.StatsView;
 
@@ -52,32 +54,64 @@ final class TransactionStats {
                 totalIncome,
                 totalExpense,
                 expenses.size(),
-                group(expenses, TransactionStats::categoryName, TransactionStats::targetName),
-                group(expenses, TransactionStats::targetName, TransactionStats::categoryName),
+                group(expenses, TransactionStats::categoryName, TransactionStats::targetName, includeMonths),
+                group(expenses, TransactionStats::targetName, TransactionStats::categoryName, includeMonths),
                 months);
     }
 
-    /** Gom theo "primary", mỗi nhóm kèm phân chia theo "secondary"; sắp xếp tiền giảm dần. */
+    /**
+     * Gom theo "primary", mỗi nhóm kèm phân chia theo "secondary"; sắp xếp tiền giảm dần.
+     * byYear = true: kèm tổng từng tháng của nhóm; false: kèm danh sách từng khoản chi.
+     */
     private static List<StatsGroup> group(
             List<FamilyTransaction> expenses,
             Function<FamilyTransaction, String> primary,
-            Function<FamilyTransaction, String> secondary) {
+            Function<FamilyTransaction, String> secondary,
+            boolean byYear) {
         Map<String, Accumulator> groups = new LinkedHashMap<>();
         for (FamilyTransaction transaction : expenses) {
             Accumulator accumulator = groups.computeIfAbsent(primary.apply(transaction), key -> new Accumulator());
             accumulator.amount = accumulator.amount.add(transaction.getAmount());
             accumulator.count++;
-            accumulator.parts.merge(secondary.apply(transaction), transaction.getAmount(), BigDecimal::add);
+            String other = secondary.apply(transaction);
+            accumulator.parts.merge(other, transaction.getAmount(), BigDecimal::add);
+            if (byYear) {
+                int monthIndex = transaction.getOccurredAt().getMonthValue() - 1;
+                accumulator.monthAmount[monthIndex] = accumulator.monthAmount[monthIndex].add(transaction.getAmount());
+                accumulator.monthCount[monthIndex]++;
+            } else {
+                accumulator.items.add(new StatsItem(
+                        transaction.getId(),
+                        transaction.getOccurredAt().toLocalDate(),
+                        transaction.getAmount(),
+                        transaction.getDescription(),
+                        other));
+            }
         }
         return groups.entrySet().stream()
-                .map(entry -> new StatsGroup(
-                        entry.getKey(),
-                        entry.getValue().amount,
-                        entry.getValue().count,
-                        entry.getValue().parts.entrySet().stream()
-                                .map(part -> new StatsPart(part.getKey(), part.getValue()))
-                                .sorted(Comparator.comparing(StatsPart::amount).reversed())
-                                .toList()))
+                .map(entry -> {
+                    Accumulator accumulator = entry.getValue();
+                    List<StatsMonthPart> monthParts = new ArrayList<>();
+                    for (int i = 0; i < 12; i++) {
+                        if (accumulator.monthCount[i] > 0) {
+                            monthParts.add(new StatsMonthPart(i + 1, accumulator.monthAmount[i], accumulator.monthCount[i]));
+                        }
+                    }
+                    List<StatsItem> items = accumulator.items.stream()
+                            .sorted(Comparator.comparing(StatsItem::date).reversed()
+                                    .thenComparing(StatsItem::id, Comparator.nullsLast(Comparator.reverseOrder())))
+                            .toList();
+                    return new StatsGroup(
+                            entry.getKey(),
+                            accumulator.amount,
+                            accumulator.count,
+                            accumulator.parts.entrySet().stream()
+                                    .map(part -> new StatsPart(part.getKey(), part.getValue()))
+                                    .sorted(Comparator.comparing(StatsPart::amount).reversed())
+                                    .toList(),
+                            monthParts,
+                            items);
+                })
                 .sorted(Comparator.comparing(StatsGroup::amount).reversed())
                 .toList();
     }
@@ -95,5 +129,14 @@ final class TransactionStats {
         BigDecimal amount = BigDecimal.ZERO;
         long count;
         final Map<String, BigDecimal> parts = new LinkedHashMap<>();
+        final BigDecimal[] monthAmount = filledZero();
+        final long[] monthCount = new long[12];
+        final List<StatsItem> items = new ArrayList<>();
+
+        private static BigDecimal[] filledZero() {
+            BigDecimal[] values = new BigDecimal[12];
+            java.util.Arrays.fill(values, BigDecimal.ZERO);
+            return values;
+        }
     }
 }

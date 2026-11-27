@@ -46,8 +46,24 @@ public final class TransactionDtos {
     /** Một phần nhỏ bên trong nhóm, ví dụ trong mục "Ăn uống" thì "Con" chiếm bao nhiêu. */
     public record StatsPart(String name, BigDecimal amount) {}
 
-    /** Một nhóm thống kê (một mục chi hoặc một đối tượng), kèm phân chia theo chiều còn lại. */
-    public record StatsGroup(String name, BigDecimal amount, long count, List<StatsPart> breakdown) {}
+    /** Một khoản chi trong nhóm (xem theo tháng). otherName: chiều còn lại (mục → ai, ai → mục). */
+    public record StatsItem(Long id, LocalDate date, BigDecimal amount, String note, String otherName) {}
+
+    /** Tổng chi của nhóm trong một tháng (xem theo năm). */
+    public record StatsMonthPart(int month, BigDecimal amount, long count) {}
+
+    /**
+     * Một nhóm thống kê (một mục chi hoặc một đối tượng), kèm phân chia theo chiều còn lại.
+     * Xem theo tháng: items = từng khoản chi (mới nhất trước), months rỗng.
+     * Xem theo năm: months = các tháng có chi (tháng 1 → 12), items rỗng.
+     */
+    public record StatsGroup(
+            String name,
+            BigDecimal amount,
+            long count,
+            List<StatsPart> breakdown,
+            List<StatsMonthPart> months,
+            List<StatsItem> items) {}
 
     public record MonthTotal(int month, BigDecimal income, BigDecimal expense) {}
 

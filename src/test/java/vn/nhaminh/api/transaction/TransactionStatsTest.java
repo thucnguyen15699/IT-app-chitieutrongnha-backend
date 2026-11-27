@@ -55,6 +55,41 @@ class TransactionStatsTest {
     }
 
     @Test
+    void monthlyGroupListsEachExpenseNewestFirst() {
+        var lunch = new FamilyTransaction(family, food, child, user, TransactionType.EXPENSE,
+                new BigDecimal("80000"), "Cơm trưa", LocalDate.of(2026, 11, 3).atStartOfDay());
+        var market = new FamilyTransaction(family, food, null, user, TransactionType.EXPENSE,
+                new BigDecimal("300000"), "Đi chợ cuối tuần", LocalDate.of(2026, 11, 20).atStartOfDay());
+
+        var foodGroup = TransactionStats.build("2026-11", List.of(lunch, market), false).byCategory().get(0);
+
+        assertEquals(2, foodGroup.items().size());
+        assertEquals(LocalDate.of(2026, 11, 20), foodGroup.items().get(0).date());
+        assertEquals("Đi chợ cuối tuần", foodGroup.items().get(0).note());
+        assertEquals("Cả nhà", foodGroup.items().get(0).otherName());
+        assertEquals("Con", foodGroup.items().get(1).otherName());
+        assertEquals(0, foodGroup.months().size());
+    }
+
+    @Test
+    void yearlyGroupHasTotalPerMonthOnlyForMonthsWithSpending() {
+        var stats = TransactionStats.build("2026", List.of(
+                expense(food, null, "6000000", 1),
+                expense(food, child, "4000000", 1),
+                expense(food, null, "7500000", 3),
+                expense(shopping, null, "200000", 2)), true);
+
+        var foodGroup = stats.byCategory().get(0);
+        assertEquals("Ăn uống", foodGroup.name());
+        assertEquals(2, foodGroup.months().size()); // tháng 2 không ăn uống → không có dòng
+        assertEquals(1, foodGroup.months().get(0).month());
+        assertEquals(new BigDecimal("10000000"), foodGroup.months().get(0).amount());
+        assertEquals(2, foodGroup.months().get(0).count());
+        assertEquals(3, foodGroup.months().get(1).month());
+        assertEquals(0, foodGroup.items().size());
+    }
+
+    @Test
     void yearlyStatsListAllTwelveMonths() {
         var stats = TransactionStats.build("2026", List.of(
                 expense(food, null, "100000", 1),
