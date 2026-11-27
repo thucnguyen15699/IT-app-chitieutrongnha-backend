@@ -25,7 +25,8 @@ public class ApiExceptionHandler {
         String message = error == null ? "Dữ liệu gửi lên chưa hợp lệ." : switch (error.getField()) {
             case "username" -> "Tên đăng nhập chỉ dùng chữ, số, dấu chấm, gạch dưới hoặc gạch ngang.";
             case "email" -> "Vui lòng nhập email hợp lệ.";
-            case "password" -> "Mật khẩu cần có từ 8 ký tự.";
+            case "password", "newPassword" -> "Mật khẩu cần có từ 8 ký tự.";
+            case "currentPassword" -> "Vui lòng nhập mật khẩu hiện tại.";
             default -> "Vui lòng kiểm tra lại thông tin đã nhập.";
         };
         return ResponseEntity.badRequest().body(new ErrorResponse(message));

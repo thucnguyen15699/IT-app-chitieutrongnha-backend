@@ -50,4 +50,15 @@ class AdminUserServiceTest {
         assertTrue(user.emailVerified());
         assertTrue(user.roles().contains("MEMBER"));
     }
+
+    @Test
+    void adminCanResetAnotherUsersPassword() {
+        User user = new User("thanhvien", "Thành viên", null, null, "old-hash", true);
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("reset-password")).thenReturn("new-hash");
+
+        adminUserService.resetPassword(7L, "reset-password");
+
+        org.junit.jupiter.api.Assertions.assertEquals("new-hash", user.getPasswordHash());
+    }
 }

@@ -16,7 +16,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
+import vn.nhaminh.api.auth.AuthDtos.ChangePasswordRequest;
 import vn.nhaminh.api.auth.AuthDtos.UpdateProfileRequest;
 import vn.nhaminh.api.user.User;
 import vn.nhaminh.api.user.UserRepository;
@@ -26,7 +28,34 @@ class ProfileServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private EmailVerificationService emailVerificationService;
     @Mock private AuthService authService;
+    @Mock private PasswordEncoder passwordEncoder;
     @InjectMocks private ProfileService profileService;
+
+    @Test
+    void changePasswordRequiresCorrectCurrentPassword() {
+        User user = new User("bo", "Bố", "bo@example.test", null, "old-hash", true);
+        when(userRepository.findByUsernameIgnoreCase("bo")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong-pass", "old-hash")).thenReturn(false);
+
+        var error = assertThrows(ResponseStatusException.class,
+                () -> profileService.changePassword("bo", new ChangePasswordRequest("wrong-pass", "new-password")));
+
+        assertEquals(HttpStatus.BAD_REQUEST, error.getStatusCode());
+        assertEquals("old-hash", user.getPasswordHash());
+    }
+
+    @Test
+    void changePasswordStoresNewHash() {
+        User user = new User("bo", "Bố", "bo@example.test", null, "old-hash", true);
+        when(userRepository.findByUsernameIgnoreCase("bo")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("old-password", "old-hash")).thenReturn(true);
+        when(passwordEncoder.encode("new-password")).thenReturn("new-hash");
+
+        profileService.changePassword("bo", new ChangePasswordRequest("old-password", "new-password"));
+
+        assertEquals("new-hash", user.getPasswordHash());
+        verify(userRepository).save(user);
+    }
 
     @Test
     void phoneIsSavedImmediatelyWithoutOtp() {

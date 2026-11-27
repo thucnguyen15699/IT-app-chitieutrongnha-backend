@@ -42,6 +42,11 @@ public final class AuthDtos {
 
     public record ProfileUpdateResponse(UserProfile user, String message) {}
 
+    /** Người dùng tự đổi mật khẩu: phải nhập đúng mật khẩu hiện tại. */
+    public record ChangePasswordRequest(
+            @NotBlank @Size(max = 72) String currentPassword,
+            @NotBlank @Size(min = 8, max = 72) String newPassword) {}
+
     public record AuthResponse(String token, UserProfile user) {}
     public record RegistrationResponse(String message) {}
     public record VerificationResponse(String message) {}

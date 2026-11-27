@@ -96,6 +96,15 @@ public class AdminUserService {
         return toView(user, family);
     }
 
+    @Transactional
+    public String resetPassword(Long userId, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tài khoản không tồn tại."));
+        user.changePasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        return "Đã đặt mật khẩu mới cho tài khoản " + user.getUsername() + ".";
+    }
+
     @Transactional(readOnly = true)
     public List<FamilySummary> listFamilies() {
         return familyRepository.findAllWithMemberCount().stream()

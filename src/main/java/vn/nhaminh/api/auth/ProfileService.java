@@ -2,9 +2,11 @@ package vn.nhaminh.api.auth;
 
 import java.util.Locale;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import vn.nhaminh.api.auth.AuthDtos.ChangePasswordRequest;
 import vn.nhaminh.api.auth.AuthDtos.ProfileUpdateResponse;
 import vn.nhaminh.api.auth.AuthDtos.UpdateProfileRequest;
 import vn.nhaminh.api.user.PhoneNumbers;
@@ -21,14 +23,17 @@ public class ProfileService {
     private final UserRepository userRepository;
     private final EmailVerificationService emailVerificationService;
     private final AuthService authService;
+    private final PasswordEncoder passwordEncoder;
 
     public ProfileService(
             UserRepository userRepository,
             EmailVerificationService emailVerificationService,
-            AuthService authService) {
+            AuthService authService,
+            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.emailVerificationService = emailVerificationService;
         this.authService = authService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -66,6 +71,21 @@ public class ProfileService {
         }
         userRepository.save(user);
         return new ProfileUpdateResponse(authService.currentUser(username), message);
+    }
+
+    /** Tự đổi mật khẩu: phải nhập đúng mật khẩu hiện tại. */
+    @Transactional
+    public String changePassword(String username, ChangePasswordRequest request) {
+        User user = findUser(username);
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mật khẩu hiện tại chưa chính xác.");
+        }
+        if (request.currentPassword().equals(request.newPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mật khẩu mới phải khác mật khẩu hiện tại.");
+        }
+        user.changePasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+        return "Đã đổi mật khẩu. Lần đăng nhập sau hãy dùng mật khẩu mới.";
     }
 
     @Transactional

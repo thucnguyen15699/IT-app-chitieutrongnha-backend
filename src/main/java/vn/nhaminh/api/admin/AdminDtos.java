@@ -33,5 +33,8 @@ public final class AdminDtos {
             String familyName,
             List<String> roles) {}
 
+    /** Quản trị viên đặt lại mật khẩu cho một tài khoản. */
+    public record ResetPasswordRequest(@NotBlank @Size(min = 8, max = 72) String newPassword) {}
+
     public record FamilySummary(Long id, String name, long memberCount, Instant createdAt) {}
 }

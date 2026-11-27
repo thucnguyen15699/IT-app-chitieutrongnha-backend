@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import vn.nhaminh.api.auth.AuthDtos.ChangePasswordRequest;
 import vn.nhaminh.api.auth.AuthDtos.ProfileUpdateResponse;
 import vn.nhaminh.api.auth.AuthDtos.UpdateProfileRequest;
 import vn.nhaminh.api.auth.AuthDtos.VerificationResponse;
@@ -23,6 +24,11 @@ public class ProfileController {
     @PutMapping
     public ProfileUpdateResponse update(Authentication authentication, @Valid @RequestBody UpdateProfileRequest request) {
         return profileService.update(authentication.getName(), request);
+    }
+
+    @PostMapping("/password")
+    public VerificationResponse changePassword(Authentication authentication, @Valid @RequestBody ChangePasswordRequest request) {
+        return new VerificationResponse(profileService.changePassword(authentication.getName(), request));
     }
 
     @PostMapping("/resend-verification")
